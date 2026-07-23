@@ -3,10 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { requireUser } from "@/lib/auth/require-user";
 import { getDb } from "@/lib/db";
 import { applications, companies, stageTransitions } from "@/lib/db/schema";
 
 export async function createApplication(formData: FormData) {
+  await requireUser();
+
   const companyName = String(formData.get("companyName") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
   const appliedAtRaw = String(formData.get("appliedAt") ?? "").trim();
