@@ -10,6 +10,21 @@
 
 ## Stack
 
-Next.js (App Router, TypeScript) · Vercel · Supabase (Postgres / Storage / Auth)
+Next.js (App Router, TypeScript) · Tailwind CSS · Vercel · Supabase (Postgres / Storage / Auth)
 
 기술 선택의 근거는 ADR로 기록합니다.
+
+## Development
+
+```bash
+pnpm install   # 의존성 설치
+pnpm dev       # 로컬 개발 서버 (http://localhost:3000)
+```
+
+| 명령             | 설명                 |
+| ---------------- | -------------------- |
+| `pnpm lint`      | ESLint 검사          |
+| `pnpm typecheck` | TypeScript 타입 검사 |
+| `pnpm format`    | Prettier 포맷팅      |
+
+PR마다 CI(GitHub Actions)가 lint · typecheck · format 검사를 실행합니다.
