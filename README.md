@@ -6,7 +6,7 @@
 
 - [기획서 (PRD)](docs/prd.md) — 문제 정의, 기능 범위, 도메인 모델 개요
 - [도메인 용어집 (CONTEXT.md)](CONTEXT.md) — 프로젝트 전체가 따르는 단일 용어 정의
-- ADR — `docs/adr/` (작성 예정)
+- [ADR](docs/adr/) — 주요 기술 결정과 근거
 
 ## Stack
 
@@ -15,6 +15,17 @@ Next.js (App Router, TypeScript) · Tailwind CSS · Vercel · Supabase (Postgres
 기술 선택의 근거는 ADR로 기록합니다.
 
 ## Development
+
+### 사전 준비 (Supabase)
+
+싱글유저 앱이므로 회원가입 기능이 없습니다. 계정은 Supabase 대시보드에서 직접 만듭니다.
+
+1. [Supabase](https://supabase.com) 프로젝트 생성
+2. **Authentication → Users → Add user**로 로그인에 사용할 계정 생성
+3. **Authentication → Sign In / Up**에서 신규 가입(Allow new users to sign up) 비활성화 권장
+4. `.env.example`을 `.env.local`로 복사한 뒤 값 입력 (URL·anon key는 **Project Settings → API**)
+
+### 실행
 
 ```bash
 pnpm install   # 의존성 설치
