@@ -28,7 +28,8 @@ CREATE TABLE "stage_transitions" (
 	"application_id" uuid NOT NULL,
 	"from_stage" "stage",
 	"to_stage" "stage" NOT NULL,
-	"occurred_at" timestamp with time zone DEFAULT now() NOT NULL
+	"occurred_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "stage_transitions_stage_changed" CHECK ("stage_transitions"."from_stage" IS DISTINCT FROM "stage_transitions"."to_stage")
 );
 --> statement-breakpoint
 ALTER TABLE "stage_transitions" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint

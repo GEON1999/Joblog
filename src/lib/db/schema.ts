@@ -38,7 +38,10 @@ export const applications = pgTable(
     appliedAt: timestamp("applied_at", { withTimezone: true }).notNull().defaultNow(),
     closedAt: timestamp("closed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (table) => [
     index("applications_company_id_idx").on(table.companyId),
@@ -61,7 +64,14 @@ export const stageTransitions = pgTable(
     toStage: stageEnum("to_stage").notNull(),
     occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index("stage_transitions_application_id_idx").on(table.applicationId)],
+  (table) => [
+    index("stage_transitions_application_id_idx").on(table.applicationId),
+    // 같은 단계로의 no-op 전환은 체류 일수 계산을 오염시킨다
+    check(
+      "stage_transitions_stage_changed",
+      sql`${table.fromStage} IS DISTINCT FROM ${table.toStage}`,
+    ),
+  ],
 ).enableRLS();
 
 export type Stage = (typeof stageEnum.enumValues)[number];

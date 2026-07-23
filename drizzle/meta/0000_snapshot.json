@@ -1,5 +1,5 @@
 {
-  "id": "5906c2d5-1ede-41a1-a068-fe77b655bfad",
+  "id": "b7176257-5fea-4dd2-988c-19f98226e49c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -225,7 +225,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "stage_transitions_stage_changed": {
+          "name": "stage_transitions_stage_changed",
+          "value": "\"stage_transitions\".\"from_stage\" IS DISTINCT FROM \"stage_transitions\".\"to_stage\""
+        }
+      },
       "isRLSEnabled": true
     }
   },
