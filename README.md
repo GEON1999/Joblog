@@ -38,7 +38,8 @@ pnpm dev       # 로컬 개발 서버 (http://localhost:3000)
 | `pnpm lint`        | ESLint 검사                     |
 | `pnpm typecheck`   | TypeScript 타입 검사            |
 | `pnpm format`      | Prettier 포맷팅                 |
+| `pnpm test`        | Vitest 단위 테스트              |
 | `pnpm db:generate` | 스키마 변경 → 마이그레이션 생성 |
 | `pnpm db:migrate`  | 마이그레이션 적용               |
 
-PR마다 CI(GitHub Actions)가 lint · typecheck · format 검사를 실행합니다.
+PR마다 CI(GitHub Actions)가 lint · typecheck · test · format 검사를 실행합니다.
