@@ -23,7 +23,8 @@ Next.js (App Router, TypeScript) · Tailwind CSS · Vercel · Supabase (Postgres
 1. [Supabase](https://supabase.com) 프로젝트 생성
 2. **Authentication → Users → Add user**로 로그인에 사용할 계정 생성
 3. **Authentication → Sign In / Up**에서 신규 가입(Allow new users to sign up) 비활성화 권장
-4. `.env.example`을 `.env.local`로 복사한 뒤 값 입력 (URL·anon key는 **Project Settings → API**)
+4. `.env.example`을 `.env.local`로 복사한 뒤 값 입력 (URL·anon key는 **Project Settings → API**, `DATABASE_URL`은 **Connect → Transaction pooler**)
+5. `pnpm db:migrate`로 마이그레이션 적용
 
 ### 실행
 
@@ -32,10 +33,12 @@ pnpm install   # 의존성 설치
 pnpm dev       # 로컬 개발 서버 (http://localhost:3000)
 ```
 
-| 명령             | 설명                 |
-| ---------------- | -------------------- |
-| `pnpm lint`      | ESLint 검사          |
-| `pnpm typecheck` | TypeScript 타입 검사 |
-| `pnpm format`    | Prettier 포맷팅      |
+| 명령               | 설명                            |
+| ------------------ | ------------------------------- |
+| `pnpm lint`        | ESLint 검사                     |
+| `pnpm typecheck`   | TypeScript 타입 검사            |
+| `pnpm format`      | Prettier 포맷팅                 |
+| `pnpm db:generate` | 스키마 변경 → 마이그레이션 생성 |
+| `pnpm db:migrate`  | 마이그레이션 적용               |
 
 PR마다 CI(GitHub Actions)가 lint · typecheck · format 검사를 실행합니다.
