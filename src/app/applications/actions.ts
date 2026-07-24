@@ -6,7 +6,14 @@ import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/require-user";
 import { getDb } from "@/lib/db";
-import { applications, companies, stageTransitions, type Stage } from "@/lib/db/schema";
+import {
+  applications,
+  companies,
+  stageTransitions,
+  type Outcome,
+  type Stage,
+} from "@/lib/db/schema";
+import { validateClose, validateReopen } from "@/lib/domain/outcome";
 import { STAGES } from "@/lib/domain/stage";
 import { validateStageMove } from "@/lib/domain/stage-move";
 
@@ -96,5 +103,80 @@ export async function moveApplicationStage(
   });
 
   revalidatePath("/");
+  return result;
+}
+
+export async function closeApplication(
+  applicationId: string,
+  outcome: Outcome,
+): Promise<{ error?: string }> {
+  await requireUser();
+
+  if (!UUID_PATTERN.test(applicationId)) {
+    return { error: "not-found" };
+  }
+
+  const result = await getDb().transaction(async (tx) => {
+    const [application] = await tx
+      .select({ outcome: applications.outcome })
+      .from(applications)
+      .where(eq(applications.id, applicationId));
+
+    if (!application) {
+      return { error: "not-found" };
+    }
+
+    const validation = validateClose(application.outcome, outcome);
+    if (!validation.ok) {
+      return { error: validation.reason };
+    }
+
+    await tx
+      .update(applications)
+      .set({ outcome, closedAt: new Date() })
+      .where(eq(applications.id, applicationId));
+
+    return {};
+  });
+
+  revalidatePath("/");
+  revalidatePath("/archive");
+  revalidatePath(`/applications/${applicationId}`);
+  return result;
+}
+
+export async function reopenApplication(applicationId: string): Promise<{ error?: string }> {
+  await requireUser();
+
+  if (!UUID_PATTERN.test(applicationId)) {
+    return { error: "not-found" };
+  }
+
+  const result = await getDb().transaction(async (tx) => {
+    const [application] = await tx
+      .select({ outcome: applications.outcome })
+      .from(applications)
+      .where(eq(applications.id, applicationId));
+
+    if (!application) {
+      return { error: "not-found" };
+    }
+
+    const validation = validateReopen(application.outcome);
+    if (!validation.ok) {
+      return { error: validation.reason };
+    }
+
+    await tx
+      .update(applications)
+      .set({ outcome: "in_progress", closedAt: null })
+      .where(eq(applications.id, applicationId));
+
+    return {};
+  });
+
+  revalidatePath("/");
+  revalidatePath("/archive");
+  revalidatePath(`/applications/${applicationId}`);
   return result;
 }
