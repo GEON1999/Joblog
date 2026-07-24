@@ -6,8 +6,9 @@ import type { Outcome } from "@/lib/db/schema";
 import { daysInStage } from "@/lib/domain/days-in-stage";
 import { CLOSED_OUTCOMES, OUTCOME_LABELS } from "@/lib/domain/outcome";
 import { STAGE_LABELS } from "@/lib/domain/stage";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { getApplicationDetail } from "@/lib/queries/application-detail";
+import { getInterviewsForApplication } from "@/lib/queries/interviews";
 import { isUuid } from "@/lib/uuid";
 
 import { closeApplication, reopenApplication } from "../actions";
@@ -33,7 +34,10 @@ export default async function ApplicationDetailPage({
     notFound();
   }
 
-  const detail = await getApplicationDetail(id);
+  const [detail, interviews] = await Promise.all([
+    getApplicationDetail(id),
+    getInterviewsForApplication(id),
+  ]);
   if (!detail) {
     notFound();
   }
@@ -89,6 +93,38 @@ export default async function ApplicationDetailPage({
             );
           })}
         </ol>
+      </section>
+
+      <section className="mt-8">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold text-gray-700">면접</h2>
+          <Link
+            href={`/applications/${application.id}/interviews/new`}
+            className="text-xs text-gray-500 hover:underline"
+          >
+            면접 추가
+          </Link>
+        </div>
+        {interviews.length === 0 ? (
+          <p className="mt-2 text-sm text-gray-500">기록된 면접이 없습니다.</p>
+        ) : (
+          <ul className="mt-3 flex flex-col gap-2">
+            {interviews.map((interview) => (
+              <li key={interview.id}>
+                <Link
+                  href={`/interviews/${interview.id}`}
+                  className="flex items-baseline justify-between rounded-md border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"
+                >
+                  <span className="font-medium">{interview.round}</span>
+                  <span className="text-xs text-gray-500">
+                    {interview.scheduledAt ? formatDateTime(interview.scheduledAt) : "일시 미정"}
+                    {interview.format && <> · {interview.format}</>}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="mt-8">

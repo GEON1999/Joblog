@@ -89,9 +89,51 @@ export const postingSnapshots = pgTable("posting_snapshots", {
     .$onUpdate(() => new Date()),
 }).enableRLS();
 
+export const interviews = pgTable(
+  "interviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => applications.id, { onDelete: "cascade" }),
+    round: text("round").notNull(), // "1차", "2차", "컬처핏" 등 자유 라벨
+    scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
+    format: text("format"), // 대면/화상/전화 등 자유 입력
+    retrospective: text("retrospective"), // 면접 직후 자유 회고
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("interviews_application_id_idx").on(table.applicationId)],
+).enableRLS();
+
+export const interviewQuestions = pgTable(
+  "interview_questions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    interviewId: uuid("interview_id")
+      .notNull()
+      .references(() => interviews.id, { onDelete: "cascade" }),
+    question: text("question").notNull(),
+    answerAtTime: text("answer_at_time"), // 당시 내 답변
+    preparedAnswer: text("prepared_answer"), // 다시 준비한 답변
+    tags: text("tags").array().notNull().default([]),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("interview_questions_interview_id_idx").on(table.interviewId)],
+).enableRLS();
+
 export type Stage = (typeof stageEnum.enumValues)[number];
 export type Outcome = (typeof outcomeEnum.enumValues)[number];
 export type Company = typeof companies.$inferSelect;
 export type PostingSnapshot = typeof postingSnapshots.$inferSelect;
+export type Interview = typeof interviews.$inferSelect;
+export type InterviewQuestion = typeof interviewQuestions.$inferSelect;
 export type Application = typeof applications.$inferSelect;
 export type StageTransition = typeof stageTransitions.$inferSelect;
