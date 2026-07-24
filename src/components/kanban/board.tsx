@@ -27,6 +27,7 @@ export interface KanbanCard {
   companyName: string;
   stage: Stage;
   stageEnteredAt: Date;
+  followUpNeeded: boolean;
 }
 
 type MoveInput = { id: string; toStage: Stage };
@@ -172,8 +173,13 @@ function CardContent({ card, overlay = false }: { card: KanbanCard; overlay?: bo
     <div className={`rounded-md border border-gray-200 bg-white p-3 ${overlay ? "shadow-lg" : ""}`}>
       <p className="text-xs text-gray-500">{card.companyName}</p>
       <p className="mt-0.5 text-sm font-medium">{card.title}</p>
-      <p className="mt-1.5 text-xs text-gray-400">
+      <p className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-400">
         {daysInStage(card.stageEnteredAt, new Date())}일째
+        {card.followUpNeeded && (
+          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+            팔로업 필요
+          </span>
+        )}
       </p>
     </div>
   );

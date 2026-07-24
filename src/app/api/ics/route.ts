@@ -1,16 +1,25 @@
-import { asc, eq, isNull } from "drizzle-orm";
+import { createHash, timingSafeEqual } from "node:crypto";
+
+import { and, asc, eq, isNull } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { applications, companies, nextActions } from "@/lib/db/schema";
 import { buildIcsCalendar, type IcsEvent } from "@/lib/domain/ics";
 import { NEXT_ACTION_KIND_LABELS } from "@/lib/domain/next-action";
 
+// 길이 차이를 안 흘리도록 고정 길이 해시로 만든 뒤 상수 시간 비교한다
+function tokenMatches(provided: string, expected: string): boolean {
+  const a = createHash("sha256").update(provided).digest();
+  const b = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(a, b);
+}
+
 // 캘린더 클라이언트가 폴링하는 공개 엔드포인트 — 세션이 아닌 토큰으로 인증한다 (ADR 0007)
 export async function GET(request: Request) {
   const token = new URL(request.url).searchParams.get("token");
   const expected = process.env.ICS_FEED_TOKEN;
 
-  if (!expected || token !== expected) {
+  if (!expected || !token || !tokenMatches(token, expected)) {
     return new Response("Not found", { status: 404 });
   }
 
@@ -26,7 +35,7 @@ export async function GET(request: Request) {
     .from(nextActions)
     .innerJoin(applications, eq(nextActions.applicationId, applications.id))
     .innerJoin(companies, eq(applications.companyId, companies.id))
-    .where(isNull(nextActions.doneAt))
+    .where(and(isNull(nextActions.doneAt), eq(applications.outcome, "in_progress")))
     .orderBy(asc(nextActions.dueAt));
 
   const events: IcsEvent[] = rows.map((row) => ({
