@@ -68,7 +68,9 @@ export async function getQuestionBank(filter: {
 }): Promise<QuestionBankEntry[]> {
   const conditions = [];
   if (filter.keyword) {
-    conditions.push(ilike(interviewQuestions.question, `%${filter.keyword}%`));
+    // %, _는 LIKE 와일드카드라 문자 그대로 검색되도록 이스케이프한다
+    const escaped = filter.keyword.replace(/[\\%_]/g, (char) => `\\${char}`);
+    conditions.push(ilike(interviewQuestions.question, `%${escaped}%`));
   }
   if (filter.tag) {
     conditions.push(arrayContains(interviewQuestions.tags, [filter.tag]));

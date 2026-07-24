@@ -34,13 +34,15 @@ export default async function ApplicationDetailPage({
     notFound();
   }
 
-  const detail = await getApplicationDetail(id);
+  const [detail, interviews] = await Promise.all([
+    getApplicationDetail(id),
+    getInterviewsForApplication(id),
+  ]);
   if (!detail) {
     notFound();
   }
 
   const { application, companyName, transitions, snapshot } = detail;
-  const interviews = await getInterviewsForApplication(application.id);
   const isInProgress = application.outcome === "in_progress";
   const now = new Date();
 
