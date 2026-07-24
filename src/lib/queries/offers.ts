@@ -18,7 +18,7 @@ export interface OfferComparisonRow {
   companyName: string;
 }
 
-export async function getOffersForComparison(): Promise<OfferComparisonRow[]> {
+export async function getOffersForComparison(userId: string): Promise<OfferComparisonRow[]> {
   return (
     getDb()
       .select({
@@ -30,6 +30,7 @@ export async function getOffersForComparison(): Promise<OfferComparisonRow[]> {
       .from(offers)
       .innerJoin(applications, eq(offers.applicationId, applications.id))
       .innerJoin(companies, eq(applications.companyId, companies.id))
+      .where(eq(applications.userId, userId))
       // 연봉 높은 순, 미정(null)은 맨 뒤로
       .orderBy(sql`${offers.annualSalary} desc nulls last`)
   );

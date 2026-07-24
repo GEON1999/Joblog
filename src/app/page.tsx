@@ -2,14 +2,16 @@ import Link from "next/link";
 
 import { KanbanBoard } from "@/components/kanban/board";
 import { AppShell } from "@/components/layout/app-shell";
+import { requireUser } from "@/lib/auth/require-user";
 import { needsFollowUp } from "@/lib/domain/follow-up";
 import { getBoardCards } from "@/lib/queries/board";
 import { getApplicationIdsWithPendingActions } from "@/lib/queries/next-actions";
 
 export default async function Home() {
+  const user = await requireUser();
   const [boardCards, pendingActionIds] = await Promise.all([
-    getBoardCards(),
-    getApplicationIdsWithPendingActions(),
+    getBoardCards(user.id),
+    getApplicationIdsWithPendingActions(user.id),
   ]);
   const now = new Date();
   const cards = boardCards.map((card) => ({

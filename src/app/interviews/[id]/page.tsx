@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { notFound } from "next/navigation";
 
+import { requireUser } from "@/lib/auth/require-user";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { getInterviewDetail } from "@/lib/queries/interviews";
 import { isUuid } from "@/lib/uuid";
@@ -20,12 +21,12 @@ export default async function InterviewDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  const [{ id }, { error }] = await Promise.all([params, searchParams]);
+  const [user, { id }, { error }] = await Promise.all([requireUser(), params, searchParams]);
   if (!isUuid(id)) {
     notFound();
   }
 
-  const detail = await getInterviewDetail(id);
+  const detail = await getInterviewDetail(id, user.id);
   if (!detail) {
     notFound();
   }

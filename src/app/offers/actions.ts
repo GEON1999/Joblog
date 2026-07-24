@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -18,7 +18,7 @@ function optionalEnum<T extends string>(raw: string, allowed: string[]): T | nul
 }
 
 export async function upsertOffer(applicationId: string, formData: FormData) {
-  await requireUser();
+  const user = await requireUser();
 
   if (!isUuid(applicationId)) {
     redirect("/");
@@ -50,11 +50,11 @@ export async function upsertOffer(applicationId: string, formData: FormData) {
     extras: parseOfferExtras(String(formData.get("extras") ?? "")),
   };
 
-  // 오퍼 단계에 도달한 지원만 처우를 기록한다 — CONTEXT.md
+  // 오퍼 단계에 도달한 내 지원만 처우를 기록한다 — CONTEXT.md, 소유권 스코프 포함
   const [application] = await getDb()
     .select({ stage: applications.stage })
     .from(applications)
-    .where(eq(applications.id, applicationId));
+    .where(and(eq(applications.id, applicationId), eq(applications.userId, user.id)));
 
   if (!application) {
     redirect("/");

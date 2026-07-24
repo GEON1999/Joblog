@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { requireUser } from "@/lib/auth/require-user";
 import { getDb } from "@/lib/db";
@@ -16,17 +16,18 @@ function contentDisposition(fileName: string): string {
 // 이 라우트는 proxy 매처에 걸려 세션 보호를 받는다. requireUser로 한 번 더 검증(심층 방어)하고,
 // 파일은 서버가 스트리밍한다 — 공개 URL을 전혀 만들지 않는다 (ADR 0008).
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  await requireUser();
+  const user = await requireUser();
 
   const { id } = await params;
   if (!isUuid(id)) {
     return new Response("Not found", { status: 404 });
   }
 
+  // 내 문서만 내려준다 — service role 이 스토리지 RLS를 우회하므로 여기 소유권 검증이 유일한 방벽 (ADR 0010)
   const [doc] = await getDb()
     .select({ storagePath: documents.storagePath, fileName: documents.fileName })
     .from(documents)
-    .where(eq(documents.id, id));
+    .where(and(eq(documents.id, id), eq(documents.userId, user.id)));
 
   if (!doc) {
     return new Response("Not found", { status: 404 });

@@ -10,8 +10,12 @@ import {
   primaryKey,
   text,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
+
+// 소유권 루트. auth.users(id)를 가리키지만 auth 스키마는 Drizzle 관리 밖이라
+// FK는 마이그레이션 SQL에서 직접 건다 (0006). 여기선 컬럼만 선언한다.
 
 // 진행 단계(Stage). 종료 여부는 outcome이 직교로 담당한다 — ADR 0003
 export const stageEnum = pgEnum("stage", [
@@ -30,17 +34,27 @@ export const outcomeEnum = pgEnum("outcome", [
   "accepted", // 수락
 ]);
 
-export const companies = pgTable("companies", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull().unique(),
-  memo: text("memo"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}).enableRLS();
+export const companies = pgTable(
+  "companies",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    // 회사명은 유저 안에서만 유일하다 — 서로 다른 유저가 같은 회사명을 쓸 수 있어야 한다
+    name: text("name").notNull(),
+    memo: text("memo"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("companies_user_id_idx").on(table.userId),
+    unique("companies_user_id_name_key").on(table.userId, table.name),
+  ],
+).enableRLS();
 
 export const applications = pgTable(
   "applications",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id),
@@ -57,6 +71,7 @@ export const applications = pgTable(
   },
   (table) => [
     index("applications_company_id_idx").on(table.companyId),
+    index("applications_user_id_idx").on(table.userId),
     // 종료 시각은 종료된 지원에만, 진행중인 지원에는 없어야 한다
     check(
       "applications_closed_iff_ended",
@@ -175,16 +190,21 @@ export const documentKindEnum = pgEnum("document_kind", [
   "other", // 기타
 ]);
 
-export const documents = pgTable("documents", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(), // 버전명, 예: "이력서 v3 - 프론트 강조"
-  kind: documentKindEnum("kind").notNull().default("resume"),
-  storagePath: text("storage_path").notNull(), // private 버킷 내 경로
-  fileName: text("file_name").notNull(), // 원본 파일명
-  fileSize: integer("file_size").notNull(), // 바이트
-  memo: text("memo"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}).enableRLS();
+export const documents = pgTable(
+  "documents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    name: text("name").notNull(), // 버전명, 예: "이력서 v3 - 프론트 강조"
+    kind: documentKindEnum("kind").notNull().default("resume"),
+    storagePath: text("storage_path").notNull(), // private 버킷 내 경로
+    fileName: text("file_name").notNull(), // 원본 파일명
+    fileSize: integer("file_size").notNull(), // 바이트
+    memo: text("memo"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("documents_user_id_idx").on(table.userId)],
+).enableRLS();
 
 // 지원 ↔ 문서 N:M — CONTEXT.md. 한 지원에 여러 문서, 한 문서를 여러 지원에
 export const applicationDocuments = pgTable(

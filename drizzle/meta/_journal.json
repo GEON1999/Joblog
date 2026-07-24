@@ -43,6 +43,13 @@
       "when": 1784873849273,
       "tag": "0005_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784886691601,
+      "tag": "0006_multi-tenant-user-id",
+      "breakpoints": true
     }
   ]
 }

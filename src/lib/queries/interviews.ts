@@ -26,7 +26,10 @@ export interface InterviewDetail {
   questions: InterviewQuestion[];
 }
 
-export async function getInterviewDetail(id: string): Promise<InterviewDetail | null> {
+export async function getInterviewDetail(
+  id: string,
+  userId: string,
+): Promise<InterviewDetail | null> {
   const db = getDb();
 
   const [row] = await db
@@ -39,7 +42,7 @@ export async function getInterviewDetail(id: string): Promise<InterviewDetail | 
     .from(interviews)
     .innerJoin(applications, eq(interviews.applicationId, applications.id))
     .innerJoin(companies, eq(applications.companyId, companies.id))
-    .where(eq(interviews.id, id));
+    .where(and(eq(interviews.id, id), eq(applications.userId, userId)));
 
   if (!row) {
     return null;
@@ -62,11 +65,14 @@ export interface QuestionBankEntry {
 }
 
 // 질문 은행은 저장소가 아니라 전체 질문의 파생 뷰다 — CONTEXT.md
-export async function getQuestionBank(filter: {
-  keyword?: string;
-  tag?: string;
-}): Promise<QuestionBankEntry[]> {
-  const conditions = [];
+export async function getQuestionBank(
+  filter: {
+    keyword?: string;
+    tag?: string;
+  },
+  userId: string,
+): Promise<QuestionBankEntry[]> {
+  const conditions = [eq(applications.userId, userId)];
   if (filter.keyword) {
     // %, _는 LIKE 와일드카드라 문자 그대로 검색되도록 이스케이프한다
     const escaped = filter.keyword.replace(/[\\%_]/g, (char) => `\\${char}`);

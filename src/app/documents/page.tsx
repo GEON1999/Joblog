@@ -5,6 +5,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { FormError, Input, Select } from "@/components/ui/form";
 import { Badge, Card, EmptyState, PageHeader, SectionTitle } from "@/components/ui/layout";
+import { requireUser } from "@/lib/auth/require-user";
 import { DOCUMENT_KIND_LABELS, DOCUMENT_KINDS, formatFileSize } from "@/lib/domain/document";
 import { getDocumentLibrary } from "@/lib/queries/documents";
 
@@ -25,6 +26,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   "bad-extension": "허용되지 않은 파일 형식입니다.",
   "upload-failed": "업로드에 실패했습니다. 잠시 후 다시 시도해 주세요.",
   "delete-failed": "파일 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+  "quota-count": "문서 개수 한도(10개)에 도달했습니다. 기존 문서를 지우고 다시 시도해 주세요.",
+  "quota-size": "저장 용량 한도(30MB)를 초과했습니다. 기존 문서를 지우고 다시 시도해 주세요.",
 };
 
 export default async function DocumentsPage({
@@ -34,7 +37,8 @@ export default async function DocumentsPage({
 }) {
   const { error } = await searchParams;
   const errorMessage = error ? ERROR_MESSAGES[error] : undefined;
-  const library = await getDocumentLibrary();
+  const user = await requireUser();
+  const library = await getDocumentLibrary(user.id);
 
   return (
     <AppShell>

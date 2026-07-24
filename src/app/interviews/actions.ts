@@ -4,15 +4,16 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { ownsApplication, ownsInterview } from "@/lib/auth/ownership";
 import { requireUser } from "@/lib/auth/require-user";
 import { getDb } from "@/lib/db";
-import { applications, interviewQuestions, interviews } from "@/lib/db/schema";
+import { interviewQuestions, interviews } from "@/lib/db/schema";
 import { parseKstDateTime } from "@/lib/domain/kst-datetime";
 import { parseTags } from "@/lib/domain/tags";
 import { isUuid } from "@/lib/uuid";
 
 export async function createInterview(applicationId: string, formData: FormData) {
-  await requireUser();
+  const user = await requireUser();
 
   if (!isUuid(applicationId)) {
     redirect("/");
@@ -31,12 +32,7 @@ export async function createInterview(applicationId: string, formData: FormData)
     redirect(`/applications/${applicationId}/interviews/new?error=invalid-datetime`);
   }
 
-  const [application] = await getDb()
-    .select({ id: applications.id })
-    .from(applications)
-    .where(eq(applications.id, applicationId));
-
-  if (!application) {
+  if (!(await ownsApplication(user.id, applicationId))) {
     redirect("/");
   }
 
@@ -50,9 +46,13 @@ export async function createInterview(applicationId: string, formData: FormData)
 }
 
 export async function saveRetrospective(interviewId: string, formData: FormData) {
-  await requireUser();
+  const user = await requireUser();
 
   if (!isUuid(interviewId)) {
+    redirect("/");
+  }
+
+  if (!(await ownsInterview(user.id, interviewId))) {
     redirect("/");
   }
 
@@ -68,7 +68,7 @@ export async function saveRetrospective(interviewId: string, formData: FormData)
 }
 
 export async function addInterviewQuestion(interviewId: string, formData: FormData) {
-  await requireUser();
+  const user = await requireUser();
 
   if (!isUuid(interviewId)) {
     redirect("/");
@@ -83,12 +83,7 @@ export async function addInterviewQuestion(interviewId: string, formData: FormDa
     redirect(`/interviews/${interviewId}?error=missing-question`);
   }
 
-  const [interview] = await getDb()
-    .select({ id: interviews.id })
-    .from(interviews)
-    .where(eq(interviews.id, interviewId));
-
-  if (!interview) {
+  if (!(await ownsInterview(user.id, interviewId))) {
     redirect("/");
   }
 

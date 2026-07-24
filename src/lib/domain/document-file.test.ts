@@ -32,21 +32,26 @@ describe("validateDocumentFile", () => {
 });
 
 describe("buildStorageKey", () => {
+  const userId = "99999999-8888-7777-6666-555555555555";
   const uuid = "11111111-2222-3333-4444-555555555555";
 
+  it("유저 폴더로 네임스페이싱한다 (멀티테넌시)", () => {
+    expect(buildStorageKey(userId, uuid, "resume.pdf")).toBe(`${userId}/${uuid}.pdf`);
+  });
+
   it("한글 파일명이어도 키는 ASCII(uuid + 확장자)만 담는다", () => {
-    expect(buildStorageKey(uuid, "이력서 v3 최종.pdf")).toBe(`${uuid}.pdf`);
+    expect(buildStorageKey(userId, uuid, "이력서 v3 최종.pdf")).toBe(`${userId}/${uuid}.pdf`);
   });
 
   it("확장자는 소문자로 보존한다", () => {
-    expect(buildStorageKey(uuid, "resume.DOCX")).toBe(`${uuid}.docx`);
+    expect(buildStorageKey(userId, uuid, "resume.DOCX")).toBe(`${userId}/${uuid}.docx`);
   });
 
   it("확장자가 없으면 uuid만", () => {
-    expect(buildStorageKey(uuid, "noext")).toBe(uuid);
+    expect(buildStorageKey(userId, uuid, "noext")).toBe(`${userId}/${uuid}`);
   });
 
   it("경로 구분자가 든 파일명도 키에 새지 않는다 (경로 탈출 차단)", () => {
-    expect(buildStorageKey(uuid, "../../etc/passwd.pdf")).toBe(`${uuid}.pdf`);
+    expect(buildStorageKey(userId, uuid, "../../etc/passwd.pdf")).toBe(`${userId}/${uuid}.pdf`);
   });
 });

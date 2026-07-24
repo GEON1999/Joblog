@@ -1,7 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { isAllowedEmail } from "@/lib/auth/allowlist";
 import { requireEnv } from "@/lib/env";
 
 export async function proxy(request: NextRequest) {
@@ -31,7 +30,8 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isLoginPage = request.nextUrl.pathname === "/login";
-  const isAuthenticated = user !== null && isAllowedEmail(user.email);
+  // 오픈 서비스: 로그인된 유저면 누구나 접근한다 (ADR 0010)
+  const isAuthenticated = user !== null;
 
   // 리다이렉트 응답에도 갱신된 세션 쿠키를 실어야 한다.
   // 버리면 rotation으로 무효화된 구 refresh token만 남아 세션이 끊길 수 있다.

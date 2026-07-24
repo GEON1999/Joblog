@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { notFound } from "next/navigation";
 
 import { createInterview } from "@/app/interviews/actions";
+import { requireUser } from "@/lib/auth/require-user";
 import { getApplicationDetail } from "@/lib/queries/application-detail";
 import { isUuid } from "@/lib/uuid";
 
@@ -23,12 +24,12 @@ export default async function NewInterviewPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  const [{ id }, { error }] = await Promise.all([params, searchParams]);
+  const [user, { id }, { error }] = await Promise.all([requireUser(), params, searchParams]);
   if (!isUuid(id)) {
     notFound();
   }
 
-  const detail = await getApplicationDetail(id);
+  const detail = await getApplicationDetail(id, user.id);
   if (!detail) {
     notFound();
   }

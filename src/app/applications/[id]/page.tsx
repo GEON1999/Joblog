@@ -3,6 +3,8 @@ import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { notFound } from "next/navigation";
 
+import { requireUser } from "@/lib/auth/require-user";
+
 import type { Outcome } from "@/lib/db/schema";
 import { daysInStage } from "@/lib/domain/days-in-stage";
 import { CLOSED_OUTCOMES, OUTCOME_LABELS } from "@/lib/domain/outcome";
@@ -46,19 +48,21 @@ export default async function ApplicationDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  const [{ id }, { error }] = await Promise.all([params, searchParams]);
+  const [user, { id }, { error }] = await Promise.all([requireUser(), params, searchParams]);
   if (!isUuid(id)) {
     notFound();
   }
 
+  // 소유권은 getApplicationDetail 이 검증한다 — 내 지원이 아니면 detail 이 null 이라 notFound 로 떨어진다.
+  // 자식 조회는 부모 소유권에 의존하므로, detail 이 truthy 일 때만 실제로 렌더된다.
   const [detail, interviews, actions, offer, linkedDocuments, unlinkedDocuments] =
     await Promise.all([
-      getApplicationDetail(id),
+      getApplicationDetail(id, user.id),
       getInterviewsForApplication(id),
       getNextActionsForApplication(id),
       getOfferForApplication(id),
-      getDocumentsForApplication(id),
-      getUnlinkedDocuments(id),
+      getDocumentsForApplication(id, user.id),
+      getUnlinkedDocuments(id, user.id),
     ]);
   if (!detail) {
     notFound();
