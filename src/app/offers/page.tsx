@@ -21,11 +21,14 @@ export default async function OffersPage() {
   const rows = await getOffersForComparison();
   const extraLabels = collectExtraLabels(rows.map((row) => row.offer));
 
-  // 연봉 최고치 강조 기준
-  const maxSalary = rows.reduce<number | null>((max, { offer }) => {
-    if (offer.annualSalary === null) return max;
-    return max === null ? offer.annualSalary : Math.max(max, offer.annualSalary);
-  }, null);
+  // 연봉 최고치 강조 기준. 비교 대상이 하나뿐이면 강조하지 않는다
+  const maxSalary =
+    rows.length < 2
+      ? null
+      : rows.reduce<number | null>((max, { offer }) => {
+          if (offer.annualSalary === null) return max;
+          return max === null ? offer.annualSalary : Math.max(max, offer.annualSalary);
+        }, null);
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8">

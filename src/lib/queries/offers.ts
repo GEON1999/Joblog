@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { applications, companies, offers, type Offer } from "@/lib/db/schema";
@@ -19,15 +19,18 @@ export interface OfferComparisonRow {
 }
 
 export async function getOffersForComparison(): Promise<OfferComparisonRow[]> {
-  return getDb()
-    .select({
-      offer: offers,
-      applicationId: applications.id,
-      applicationTitle: applications.title,
-      companyName: companies.name,
-    })
-    .from(offers)
-    .innerJoin(applications, eq(offers.applicationId, applications.id))
-    .innerJoin(companies, eq(applications.companyId, companies.id))
-    .orderBy(desc(offers.annualSalary));
+  return (
+    getDb()
+      .select({
+        offer: offers,
+        applicationId: applications.id,
+        applicationTitle: applications.title,
+        companyName: companies.name,
+      })
+      .from(offers)
+      .innerJoin(applications, eq(offers.applicationId, applications.id))
+      .innerJoin(companies, eq(applications.companyId, companies.id))
+      // 연봉 높은 순, 미정(null)은 맨 뒤로
+      .orderBy(sql`${offers.annualSalary} desc nulls last`)
+  );
 }
