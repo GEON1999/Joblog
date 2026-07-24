@@ -78,9 +78,16 @@ export async function deleteDocument(documentId: string) {
     redirect("/documents");
   }
 
-  // 파일 먼저 지우고 레코드를 지운다 — 순서가 반대면 경로를 잃은 고아 파일이 남는다 (ADR 0008)
+  // 파일 먼저 지우고 레코드를 지운다 — 순서가 반대면 경로를 잃은 고아 파일이 남는다 (ADR 0008).
+  // 파일 제거가 실패하면 레코드를 남겨 재시도할 수 있게 한다 (레코드만 지우면 파일이 고아가 된다)
   const storage = createStorageClient();
-  await storage.storage.from(DOCUMENTS_BUCKET).remove([doc.storagePath]);
+  const { error: removeError } = await storage.storage
+    .from(DOCUMENTS_BUCKET)
+    .remove([doc.storagePath]);
+  if (removeError) {
+    redirect("/documents?error=delete-failed");
+  }
+
   await getDb().delete(documents).where(eq(documents.id, documentId));
 
   revalidatePath("/documents");
