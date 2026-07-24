@@ -47,20 +47,24 @@ export default async function DocumentsPage({
       <Card className="bg-surface-muted">
         <form action={uploadDocument} className="flex flex-col gap-3">
           <SectionTitle>새 문서 업로드</SectionTitle>
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              name="name"
-              required
-              placeholder="버전명 (예: 이력서 v3 - 프론트 강조)"
-            />
-            <Select name="kind" defaultValue="resume" className="w-auto shrink-0">
-              {DOCUMENT_KINDS.map((kind) => (
-                <option key={kind} value={kind}>
-                  {DOCUMENT_KIND_LABELS[kind]}
-                </option>
-              ))}
-            </Select>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex-1">
+              <Input
+                type="text"
+                name="name"
+                required
+                placeholder="버전명 (예: 이력서 v3 - 프론트 강조)"
+              />
+            </div>
+            <div className="sm:w-40 sm:shrink-0">
+              <Select name="kind" defaultValue="resume">
+                {DOCUMENT_KINDS.map((kind) => (
+                  <option key={kind} value={kind}>
+                    {DOCUMENT_KIND_LABELS[kind]}
+                  </option>
+                ))}
+              </Select>
+            </div>
           </div>
           <input
             type="file"
