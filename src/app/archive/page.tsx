@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { OUTCOME_LABELS } from "@/lib/domain/outcome";
 import { STAGE_LABELS } from "@/lib/domain/stage";
+import { formatDate } from "@/lib/format";
 import { getArchivedApplications } from "@/lib/queries/application-detail";
 
 export const metadata: Metadata = {
@@ -12,12 +13,6 @@ export const metadata: Metadata = {
 // 쿠키/파라미터를 읽지 않는 페이지라 정적 프리렌더 대상이 된다 —
 // 빌드 시점 DB 접근(CI엔 env가 없다)과 stale 목록을 막기 위해 명시적으로 동적 렌더
 export const dynamic = "force-dynamic";
-
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeZone: "Asia/Seoul" }).format(
-    date,
-  );
-}
 
 export default async function ArchivePage() {
   const archived = await getArchivedApplications();

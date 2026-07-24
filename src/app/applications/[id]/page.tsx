@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import type { Outcome } from "@/lib/db/schema";
 import { daysInStage } from "@/lib/domain/days-in-stage";
 import { CLOSED_OUTCOMES, OUTCOME_LABELS } from "@/lib/domain/outcome";
 import { STAGE_LABELS } from "@/lib/domain/stage";
+import { formatDate } from "@/lib/format";
 import { getApplicationDetail } from "@/lib/queries/application-detail";
+import { isUuid } from "@/lib/uuid";
 
 import { closeApplication, reopenApplication } from "../actions";
 
@@ -13,20 +16,12 @@ export const metadata: Metadata = {
   title: "지원 상세 — JobLog",
 };
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-const OUTCOME_BADGE_STYLES: Record<string, string> = {
+const OUTCOME_BADGE_STYLES: Record<Outcome, string> = {
   in_progress: "bg-blue-50 text-blue-700",
   rejected: "bg-red-50 text-red-700",
   withdrawn: "bg-gray-100 text-gray-600",
   accepted: "bg-green-50 text-green-700",
 };
-
-function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeZone: "Asia/Seoul" }).format(
-    date,
-  );
-}
 
 export default async function ApplicationDetailPage({
   params,
@@ -34,7 +29,7 @@ export default async function ApplicationDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  if (!UUID_PATTERN.test(id)) {
+  if (!isUuid(id)) {
     notFound();
   }
 
