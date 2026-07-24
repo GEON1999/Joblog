@@ -17,13 +17,13 @@
   --input: #ffffff; /* 입력 배경 */
   --input-foreground: #0f1115; /* 입력 텍스트 — 회색이 아니라 진하게 */
   --placeholder: #9aa0aa; /* 플레이스홀더 */
-  --ring: #6366f1; /* 포커스 링 */
+  --ring: #14b8a6; /* 포커스 링 */
 
-  --primary: #4f46e5; /* 브랜드 인디고 */
-  --primary-hover: #4338ca;
+  --primary: #0d9488; /* 브랜드 딥 틸 */
+  --primary-hover: #0b7d73;
   --primary-foreground: #ffffff;
-  --accent: #eef2ff; /* 브랜드 옅은 배경(선택/강조) */
-  --accent-foreground: #4338ca;
+  --accent: #ecfdf9; /* 브랜드 옅은 배경(선택/강조) */
+  --accent-foreground: #0b7d73;
 
   --success: #067647;
   --success-bg: #ecfdf3;
@@ -43,13 +43,13 @@
   --input: #15171c;
   --input-foreground: #f2f3f5;
   --placeholder: #6b7280;
-  --ring: #818cf8;
+  --ring: #2dd4bf;
 
-  --primary: #6366f1;
-  --primary-hover: #7c7ff2;
-  --primary-foreground: #ffffff;
-  --accent: #1e1b3a;
-  --accent-foreground: #c7d2fe;
+  --primary: #2dd4bf;
+  --primary-hover: #5eead4;
+  --primary-foreground: #06201d;
+  --accent: #10312d;
+  --accent-foreground: #99f6e4;
 
   --success: #75e0a7;
   --success-bg: #12261c;

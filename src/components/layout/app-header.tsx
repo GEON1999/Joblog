@@ -19,7 +19,7 @@ function isActive(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-export function AppHeader({ email }: { email?: string }) {
+export function AppHeader() {
   const pathname = usePathname();
 
   return (
@@ -52,17 +52,14 @@ export function AppHeader({ email }: { email?: string }) {
 
         <div className="flex shrink-0 items-center gap-2">
           <ThemeToggle />
-          {email && (
-            <form action={logout}>
-              <button
-                type="submit"
-                title={email}
-                className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground"
-              >
-                로그아웃
-              </button>
-            </form>
-          )}
+          <form action={logout}>
+            <button
+              type="submit"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground"
+            >
+              로그아웃
+            </button>
+          </form>
         </div>
       </div>
     </header>
