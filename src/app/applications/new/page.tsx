@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 const ERROR_MESSAGES: Record<string, string> = {
   missing: "회사명과 직무명을 입력해 주세요.",
   "invalid-date": "지원일 형식이 올바르지 않습니다.",
+  "invalid-url": "공고 URL은 http(s) 주소여야 합니다.",
 };
 
 export default async function NewApplicationPage({

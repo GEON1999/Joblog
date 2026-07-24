@@ -69,6 +69,9 @@ export default async function SnapshotEditPage({
           />
         </label>
         {error === "missing" && <p className="text-sm text-red-600">본문을 입력해 주세요.</p>}
+        {error === "invalid-url" && (
+          <p className="text-sm text-red-600">원본 URL은 http(s) 주소여야 합니다.</p>
+        )}
         <button
           type="submit"
           className="rounded-md bg-gray-900 py-2 font-medium text-white hover:bg-gray-700"

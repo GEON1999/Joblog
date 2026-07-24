@@ -17,6 +17,7 @@ import {
 import { validateClose, validateReopen } from "@/lib/domain/outcome";
 import { STAGES } from "@/lib/domain/stage";
 import { validateStageMove } from "@/lib/domain/stage-move";
+import { parseHttpUrl } from "@/lib/url";
 import { isUuid } from "@/lib/uuid";
 
 export async function createApplication(formData: FormData) {
@@ -35,6 +36,11 @@ export async function createApplication(formData: FormData) {
   const appliedAt = appliedAtRaw ? new Date(appliedAtRaw) : new Date();
   if (Number.isNaN(appliedAt.getTime())) {
     redirect("/applications/new?error=invalid-date");
+  }
+
+  const parsedPostingUrl = parseHttpUrl(postingUrl);
+  if (postingUrl && !parsedPostingUrl) {
+    redirect("/applications/new?error=invalid-url");
   }
 
   await getDb().transaction(async (tx) => {
@@ -63,7 +69,7 @@ export async function createApplication(formData: FormData) {
       await tx.insert(postingSnapshots).values({
         applicationId: application.id,
         content: postingContent,
-        sourceUrl: postingUrl || null,
+        sourceUrl: parsedPostingUrl,
       });
     }
   });
@@ -131,13 +137,19 @@ export async function savePostingSnapshot(applicationId: string, formData: FormD
     redirect(`/applications/${applicationId}/snapshot?error=missing`);
   }
 
-  // 지원당 스냅샷 하나 — 이미 있으면 덮어쓴다 (수정 허용, ADR 0004)
+  const parsedSourceUrl = parseHttpUrl(sourceUrl);
+  if (sourceUrl && !parsedSourceUrl) {
+    redirect(`/applications/${applicationId}/snapshot?error=invalid-url`);
+  }
+
+  // 지원당 스냅샷 하나 — 이미 있으면 덮어쓴다 (수정 허용, ADR 0004).
+  // $onUpdate는 update 쿼리에만 적용되므로 upsert에서는 updatedAt을 직접 갱신한다
   await getDb()
     .insert(postingSnapshots)
-    .values({ applicationId, content, sourceUrl: sourceUrl || null })
+    .values({ applicationId, content, sourceUrl: parsedSourceUrl })
     .onConflictDoUpdate({
       target: postingSnapshots.applicationId,
-      set: { content, sourceUrl: sourceUrl || null },
+      set: { content, sourceUrl: parsedSourceUrl, updatedAt: new Date() },
     });
 
   revalidatePath(`/applications/${applicationId}`);
