@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AppShell } from "@/components/layout/app-shell";
+import { EmptyState, PageHeader } from "@/components/ui/layout";
 import { OUTCOME_LABELS } from "@/lib/domain/outcome";
 import { STAGE_LABELS } from "@/lib/domain/stage";
 import { formatDate } from "@/lib/format";
@@ -18,29 +20,28 @@ export default async function ArchivePage() {
   const archived = await getArchivedApplications();
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">아카이브</h1>
-        <Link href="/" className="text-sm text-gray-500 hover:underline">
-          ← 보드로
-        </Link>
-      </header>
+    <AppShell>
+      <PageHeader
+        title="아카이브"
+        description="종료된 지원을 마지막 단계와 결과로 되돌아봅니다."
+        back={{ href: "/", label: "보드로" }}
+      />
 
       {archived.length === 0 ? (
-        <p className="mt-16 text-center text-sm text-gray-500">종료된 지원이 없습니다.</p>
+        <EmptyState>종료된 지원이 없습니다.</EmptyState>
       ) : (
-        <ul className="mt-6 flex flex-col gap-2">
+        <ul className="flex flex-col gap-2">
           {archived.map((item) => (
             <li key={item.id}>
               <Link
                 href={`/applications/${item.id}`}
-                className="flex items-baseline justify-between rounded-md border border-gray-200 px-4 py-3 hover:bg-gray-50"
+                className="flex items-baseline justify-between rounded-xl border border-border bg-surface px-4 py-3 transition-colors hover:border-ring/40 hover:bg-surface-muted"
               >
                 <span className="min-w-0">
-                  <span className="block text-xs text-gray-500">{item.companyName}</span>
-                  <span className="mt-0.5 block truncate text-sm font-medium">{item.title}</span>
+                  <span className="block text-xs text-muted-foreground">{item.companyName}</span>
+                  <span className="mt-0.5 block truncate text-sm font-semibold">{item.title}</span>
                 </span>
-                <span className="ml-4 shrink-0 text-right text-xs text-gray-500">
+                <span className="ml-4 shrink-0 text-right text-xs text-muted-foreground">
                   <span className="block">
                     {STAGE_LABELS[item.stage]}에서 {OUTCOME_LABELS[item.outcome]}
                   </span>
@@ -53,6 +54,6 @@ export default async function ArchivePage() {
           ))}
         </ul>
       )}
-    </main>
+    </AppShell>
   );
 }

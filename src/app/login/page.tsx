@@ -23,32 +23,49 @@ export default async function LoginPage({
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <h1 className="mb-8 text-center text-2xl font-bold">JobLog</h1>
-        <form action={login} className="flex flex-col gap-4">
-          <label className="flex flex-col gap-1 text-sm">
+        <div className="mb-8 flex flex-col items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <rect x="3" y="11" width="4" height="10" rx="1" fill="currentColor" />
+              <rect x="10" y="6" width="4" height="15" rx="1" fill="currentColor" opacity="0.85" />
+              <rect x="17" y="3" width="4" height="18" rx="1" fill="currentColor" opacity="0.7" />
+            </svg>
+          </span>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold tracking-tight">JobLog</h1>
+            <p className="mt-1 text-sm text-muted-foreground">구직 활동을 한 곳에서 추적하세요</p>
+          </div>
+        </div>
+        <form
+          action={login}
+          className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-6 shadow-sm"
+        >
+          <label className="flex flex-col gap-1.5 text-sm font-medium">
             이메일
             <input
               type="email"
               name="email"
               required
               autoComplete="email"
-              className="rounded-md border border-gray-300 px-3 py-2 focus:border-gray-500 focus:outline-none"
+              className="rounded-lg border border-border bg-input px-3 py-2 font-normal outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex flex-col gap-1.5 text-sm font-medium">
             비밀번호
             <input
               type="password"
               name="password"
               required
               autoComplete="current-password"
-              className="rounded-md border border-gray-300 px-3 py-2 focus:border-gray-500 focus:outline-none"
+              className="rounded-lg border border-border bg-input px-3 py-2 font-normal outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
             />
           </label>
-          {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
+          {errorMessage && (
+            <p className="rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger">{errorMessage}</p>
+          )}
           <button
             type="submit"
-            className="rounded-md bg-gray-900 py-2 font-medium text-white hover:bg-gray-700"
+            className="mt-1 rounded-lg bg-primary py-2.5 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
           >
             로그인
           </button>

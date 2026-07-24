@@ -93,7 +93,7 @@ export function KanbanBoard({ cards }: { cards: KanbanCard[] }) {
         releaseClickSuppression();
       }}
     >
-      <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <section className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {STAGES.map((stage) => (
           <StageColumn
             key={stage}
@@ -122,11 +122,15 @@ function StageColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-lg p-3 transition-colors ${isOver ? "bg-blue-50 ring-2 ring-blue-300" : "bg-gray-100"}`}
+      className={`rounded-xl border p-3 transition-colors ${
+        isOver ? "border-ring bg-accent" : "border-border bg-surface-muted"
+      }`}
     >
-      <h2 className="flex items-baseline justify-between text-sm font-semibold">
+      <h2 className="flex items-center justify-between text-sm font-semibold">
         {STAGE_LABELS[stage]}
-        <span className="text-xs font-normal text-gray-500">{cards.length}</span>
+        <span className="rounded-full bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground">
+          {cards.length}
+        </span>
       </h2>
       <ul className="mt-3 flex min-h-8 flex-col gap-2">
         {cards.map((card) => (
@@ -170,13 +174,17 @@ function DraggableCard({
 
 function CardContent({ card, overlay = false }: { card: KanbanCard; overlay?: boolean }) {
   return (
-    <div className={`rounded-md border border-gray-200 bg-white p-3 ${overlay ? "shadow-lg" : ""}`}>
-      <p className="text-xs text-gray-500">{card.companyName}</p>
-      <p className="mt-0.5 text-sm font-medium">{card.title}</p>
-      <p className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-400">
-        {daysInStage(card.stageEnteredAt, new Date())}일째
+    <div
+      className={`rounded-lg border border-border bg-surface p-3 transition-shadow ${
+        overlay ? "shadow-lg" : "hover:border-ring/40 hover:shadow-sm"
+      }`}
+    >
+      <p className="text-xs text-muted-foreground">{card.companyName}</p>
+      <p className="mt-0.5 text-sm font-semibold">{card.title}</p>
+      <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span>{daysInStage(card.stageEnteredAt, new Date())}일째</span>
         {card.followUpNeeded && (
-          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+          <span className="rounded-full bg-warning-bg px-1.5 py-0.5 text-[10px] font-medium text-warning-fg">
             팔로업 필요
           </span>
         )}

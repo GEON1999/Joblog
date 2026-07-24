@@ -1,18 +1,12 @@
 import Link from "next/link";
 
 import { KanbanBoard } from "@/components/kanban/board";
+import { AppShell } from "@/components/layout/app-shell";
 import { needsFollowUp } from "@/lib/domain/follow-up";
 import { getBoardCards } from "@/lib/queries/board";
 import { getApplicationIdsWithPendingActions } from "@/lib/queries/next-actions";
-import { createClient } from "@/lib/supabase/server";
-
-import { logout } from "./login/actions";
 
 export default async function Home() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   const [boardCards, pendingActionIds] = await Promise.all([
     getBoardCards(),
     getApplicationIdsWithPendingActions(),
@@ -29,43 +23,22 @@ export default async function Home() {
   }));
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-8">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">JobLog</h1>
-        <div className="flex items-center gap-3 text-sm">
-          <Link href="/documents" className="text-gray-500 hover:underline">
-            문서
-          </Link>
-          <Link href="/questions" className="text-gray-500 hover:underline">
-            질문 은행
-          </Link>
-          <Link href="/offers" className="text-gray-500 hover:underline">
-            오퍼
-          </Link>
-          <Link href="/dashboard" className="text-gray-500 hover:underline">
-            대시보드
-          </Link>
-          <Link href="/archive" className="text-gray-500 hover:underline">
-            아카이브
-          </Link>
-          <Link
-            href="/applications/new"
-            className="rounded-md bg-gray-900 px-3 py-1.5 font-medium text-white hover:bg-gray-700"
-          >
-            새 지원
-          </Link>
-          <span className="text-gray-500">{user?.email}</span>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="rounded-md border border-gray-300 px-3 py-1.5 hover:bg-gray-50"
-            >
-              로그아웃
-            </button>
-          </form>
+    <AppShell width="wide">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">지원 파이프라인</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            카드를 끌어 단계를 옮기세요. 단계별 체류 일수가 함께 표시됩니다.
+          </p>
         </div>
-      </header>
+        <Link
+          href="/applications/new"
+          className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover"
+        >
+          + 새 지원
+        </Link>
+      </div>
       <KanbanBoard cards={cards} />
-    </main>
+    </AppShell>
   );
 }
