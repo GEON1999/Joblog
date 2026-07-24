@@ -33,8 +33,11 @@ https://<배포 도메인>/api/ics?token=<ICS_FEED_TOKEN>
 1. [Supabase](https://supabase.com) 프로젝트 생성
 2. **Authentication → Users → Add user**로 로그인에 사용할 계정 생성
 3. **Authentication → Sign In / Up**에서 신규 가입(Allow new users to sign up) 비활성화 권장
-4. `.env.example`을 `.env.local`로 복사한 뒤 값 입력 (URL·anon key는 **Project Settings → API**, `DATABASE_URL`은 **Connect → Transaction pooler**)
-5. `pnpm db:migrate`로 마이그레이션 적용
+4. **Storage → New bucket**으로 `documents` 버킷을 **private**으로 생성 (제출 문서 저장용)
+5. `.env.example`을 `.env.local`로 복사한 뒤 값 입력 (URL·anon key·`SUPABASE_SERVICE_ROLE_KEY`는 **Project Settings → API**, `DATABASE_URL`은 **Connect → Transaction pooler**)
+6. `pnpm db:migrate`로 마이그레이션 적용
+
+> `SUPABASE_SERVICE_ROLE_KEY`는 모든 접근 제어를 우회하는 키입니다. 서버에서만 쓰이며 절대 클라이언트에 노출하면 안 됩니다 ([ADR 0008](docs/adr/0008-private-file-storage.md)).
 
 ### 실행
 

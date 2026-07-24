@@ -7,6 +7,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uuid,
@@ -167,6 +168,42 @@ export const interviewQuestions = pgTable(
   (table) => [index("interview_questions_interview_id_idx").on(table.interviewId)],
 ).enableRLS();
 
+export const documentKindEnum = pgEnum("document_kind", [
+  "resume", // 이력서
+  "portfolio", // 포트폴리오
+  "cover_letter", // 자기소개서
+  "other", // 기타
+]);
+
+export const documents = pgTable("documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(), // 버전명, 예: "이력서 v3 - 프론트 강조"
+  kind: documentKindEnum("kind").notNull().default("resume"),
+  storagePath: text("storage_path").notNull(), // private 버킷 내 경로
+  fileName: text("file_name").notNull(), // 원본 파일명
+  fileSize: integer("file_size").notNull(), // 바이트
+  memo: text("memo"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}).enableRLS();
+
+// 지원 ↔ 문서 N:M — CONTEXT.md. 한 지원에 여러 문서, 한 문서를 여러 지원에
+export const applicationDocuments = pgTable(
+  "application_documents",
+  {
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => applications.id, { onDelete: "cascade" }),
+    documentId: uuid("document_id")
+      .notNull()
+      .references(() => documents.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.applicationId, table.documentId] }),
+    index("application_documents_document_id_idx").on(table.documentId),
+  ],
+).enableRLS();
+
 export const contractTypeEnum = pgEnum("contract_type", [
   "permanent", // 정규
   "contract", // 계약
@@ -213,5 +250,7 @@ export type NextActionKind = (typeof nextActionKindEnum.enumValues)[number];
 export type Offer = typeof offers.$inferSelect;
 export type ContractType = (typeof contractTypeEnum.enumValues)[number];
 export type WorkMode = (typeof workModeEnum.enumValues)[number];
+export type Document = typeof documents.$inferSelect;
+export type DocumentKind = (typeof documentKindEnum.enumValues)[number];
 export type Application = typeof applications.$inferSelect;
 export type StageTransition = typeof stageTransitions.$inferSelect;

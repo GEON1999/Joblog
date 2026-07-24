@@ -9,11 +9,13 @@ import { STAGE_LABELS } from "@/lib/domain/stage";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { NEXT_ACTION_KIND_LABELS, NEXT_ACTION_KINDS } from "@/lib/domain/next-action";
 import { getApplicationDetail } from "@/lib/queries/application-detail";
+import { getDocumentsForApplication, getUnlinkedDocuments } from "@/lib/queries/documents";
 import { getInterviewsForApplication } from "@/lib/queries/interviews";
 import { getNextActionsForApplication } from "@/lib/queries/next-actions";
 import { getOfferForApplication } from "@/lib/queries/offers";
 import { isUuid } from "@/lib/uuid";
 
+import { DocumentsSection } from "@/components/document/documents-section";
 import { OfferSection } from "@/components/offer/offer-section";
 import { createNextAction, toggleNextActionDone } from "@/app/next-actions/actions";
 
@@ -48,12 +50,15 @@ export default async function ApplicationDetailPage({
     notFound();
   }
 
-  const [detail, interviews, actions, offer] = await Promise.all([
-    getApplicationDetail(id),
-    getInterviewsForApplication(id),
-    getNextActionsForApplication(id),
-    getOfferForApplication(id),
-  ]);
+  const [detail, interviews, actions, offer, linkedDocuments, unlinkedDocuments] =
+    await Promise.all([
+      getApplicationDetail(id),
+      getInterviewsForApplication(id),
+      getNextActionsForApplication(id),
+      getOfferForApplication(id),
+      getDocumentsForApplication(id),
+      getUnlinkedDocuments(id),
+    ]);
   if (!detail) {
     notFound();
   }
@@ -221,6 +226,12 @@ export default async function ApplicationDetailPage({
           </ul>
         )}
       </section>
+
+      <DocumentsSection
+        applicationId={application.id}
+        linked={linkedDocuments}
+        unlinked={unlinkedDocuments}
+      />
 
       <section className="mt-8">
         <div className="flex items-baseline justify-between">
