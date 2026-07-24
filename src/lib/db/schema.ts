@@ -74,8 +74,24 @@ export const stageTransitions = pgTable(
   ],
 ).enableRLS();
 
+export const postingSnapshots = pgTable("posting_snapshots", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  applicationId: uuid("application_id")
+    .notNull()
+    .unique() // 지원당 스냅샷 하나 — CONTEXT.md
+    .references(() => applications.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  sourceUrl: text("source_url"),
+  capturedAt: timestamp("captured_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+}).enableRLS();
+
 export type Stage = (typeof stageEnum.enumValues)[number];
 export type Outcome = (typeof outcomeEnum.enumValues)[number];
 export type Company = typeof companies.$inferSelect;
+export type PostingSnapshot = typeof postingSnapshots.$inferSelect;
 export type Application = typeof applications.$inferSelect;
 export type StageTransition = typeof stageTransitions.$inferSelect;

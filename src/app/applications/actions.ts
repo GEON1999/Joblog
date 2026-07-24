@@ -9,6 +9,7 @@ import { getDb } from "@/lib/db";
 import {
   applications,
   companies,
+  postingSnapshots,
   stageTransitions,
   type Outcome,
   type Stage,
@@ -16,6 +17,7 @@ import {
 import { validateClose, validateReopen } from "@/lib/domain/outcome";
 import { STAGES } from "@/lib/domain/stage";
 import { validateStageMove } from "@/lib/domain/stage-move";
+import { parseHttpUrl } from "@/lib/url";
 import { isUuid } from "@/lib/uuid";
 
 export async function createApplication(formData: FormData) {
@@ -24,6 +26,8 @@ export async function createApplication(formData: FormData) {
   const companyName = String(formData.get("companyName") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
   const appliedAtRaw = String(formData.get("appliedAt") ?? "").trim();
+  const postingContent = String(formData.get("postingContent") ?? "").trim();
+  const postingUrl = String(formData.get("postingUrl") ?? "").trim();
 
   if (!companyName || !title) {
     redirect("/applications/new?error=missing");
@@ -32,6 +36,11 @@ export async function createApplication(formData: FormData) {
   const appliedAt = appliedAtRaw ? new Date(appliedAtRaw) : new Date();
   if (Number.isNaN(appliedAt.getTime())) {
     redirect("/applications/new?error=invalid-date");
+  }
+
+  const parsedPostingUrl = parseHttpUrl(postingUrl);
+  if (postingUrl && !parsedPostingUrl) {
+    redirect("/applications/new?error=invalid-url");
   }
 
   await getDb().transaction(async (tx) => {
@@ -54,6 +63,15 @@ export async function createApplication(formData: FormData) {
       toStage: "applied",
       occurredAt: appliedAt,
     });
+
+    // 공고 원문을 붙여넣었다면 지원 시점 스냅샷으로 함께 보존한다 — ADR 0004
+    if (postingContent) {
+      await tx.insert(postingSnapshots).values({
+        applicationId: application.id,
+        content: postingContent,
+        sourceUrl: parsedPostingUrl,
+      });
+    }
   });
 
   revalidatePath("/");
@@ -103,6 +121,39 @@ export async function moveApplicationStage(
 
   revalidatePath("/");
   return result;
+}
+
+export async function savePostingSnapshot(applicationId: string, formData: FormData) {
+  await requireUser();
+
+  if (!isUuid(applicationId)) {
+    redirect("/");
+  }
+
+  const content = String(formData.get("content") ?? "").trim();
+  const sourceUrl = String(formData.get("sourceUrl") ?? "").trim();
+
+  if (!content) {
+    redirect(`/applications/${applicationId}/snapshot?error=missing`);
+  }
+
+  const parsedSourceUrl = parseHttpUrl(sourceUrl);
+  if (sourceUrl && !parsedSourceUrl) {
+    redirect(`/applications/${applicationId}/snapshot?error=invalid-url`);
+  }
+
+  // 지원당 스냅샷 하나 — 이미 있으면 덮어쓴다 (수정 허용, ADR 0004).
+  // $onUpdate는 update 쿼리에만 적용되므로 upsert에서는 updatedAt을 직접 갱신한다
+  await getDb()
+    .insert(postingSnapshots)
+    .values({ applicationId, content, sourceUrl: parsedSourceUrl })
+    .onConflictDoUpdate({
+      target: postingSnapshots.applicationId,
+      set: { content, sourceUrl: parsedSourceUrl, updatedAt: new Date() },
+    });
+
+  revalidatePath(`/applications/${applicationId}`);
+  redirect(`/applications/${applicationId}`);
 }
 
 export async function closeApplication(
