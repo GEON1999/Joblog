@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AppShell } from "@/components/layout/app-shell";
 import { notFound } from "next/navigation";
 
 import { formatDate, formatDateTime } from "@/lib/format";
@@ -32,38 +33,38 @@ export default async function InterviewDetailPage({
   const { interview, applicationId, applicationTitle, companyName, questions } = detail;
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-8">
+    <AppShell>
       <Link
         href={`/applications/${applicationId}`}
-        className="text-sm text-gray-500 hover:underline"
+        className="text-sm text-muted-foreground hover:underline"
       >
         ← 지원 상세로
       </Link>
 
       <header className="mt-4">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           {companyName} · {applicationTitle}
         </p>
         <h1 className="mt-1 text-2xl font-bold">{interview.round} 면접</h1>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-muted-foreground">
           {interview.scheduledAt ? formatDateTime(interview.scheduledAt) : "일시 미정"}
           {interview.format && <> · {interview.format}</>}
         </p>
       </header>
 
       <section className="mt-8">
-        <h2 className="text-sm font-semibold text-gray-700">회고</h2>
+        <h2 className="text-sm font-semibold text-foreground">회고</h2>
         <form action={saveRetrospective.bind(null, interview.id)} className="mt-3">
           <textarea
             name="retrospective"
             rows={5}
             defaultValue={interview.retrospective ?? ""}
             placeholder="분위기, 잘한 점, 아쉬운 점을 면접 직후에 남겨두세요"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+            className="w-full rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
           />
           <button
             type="submit"
-            className="mt-2 rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50"
+            className="mt-2 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-surface-muted"
           >
             회고 저장
           </button>
@@ -71,20 +72,20 @@ export default async function InterviewDetailPage({
       </section>
 
       <section className="mt-8">
-        <h2 className="text-sm font-semibold text-gray-700">받은 질문 ({questions.length})</h2>
+        <h2 className="text-sm font-semibold text-foreground">받은 질문 ({questions.length})</h2>
         <ul className="mt-3 flex flex-col gap-3">
           {questions.map((question) => (
-            <li key={question.id} className="rounded-md border border-gray-200 p-4">
+            <li key={question.id} className="rounded-md border border-border p-4">
               <p className="text-sm font-medium">{question.question}</p>
               {question.answerAtTime && (
-                <p className="mt-2 text-xs text-gray-600">
-                  <span className="font-semibold text-gray-500">당시 답변</span> ·{" "}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  <span className="font-semibold text-muted-foreground">당시 답변</span> ·{" "}
                   {question.answerAtTime}
                 </p>
               )}
               {question.preparedAnswer && (
-                <p className="mt-1 text-xs text-gray-600">
-                  <span className="font-semibold text-gray-500">다시 준비한 답변</span> ·{" "}
+                <p className="mt-1 text-xs text-muted-foreground">
+                  <span className="font-semibold text-muted-foreground">다시 준비한 답변</span> ·{" "}
                   {question.preparedAnswer}
                 </p>
               )}
@@ -93,23 +94,25 @@ export default async function InterviewDetailPage({
                   {question.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                      className="rounded-full bg-surface-muted px-2 py-0.5 text-xs text-muted-foreground"
                     >
                       {tag}
                     </span>
                   ))}
                 </p>
               )}
-              <p className="mt-2 text-xs text-gray-400">{formatDate(question.createdAt)} 기록</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {formatDate(question.createdAt)} 기록
+              </p>
             </li>
           ))}
         </ul>
 
         <form
           action={addInterviewQuestion.bind(null, interview.id)}
-          className="mt-6 flex flex-col gap-3 rounded-md border border-gray-200 bg-gray-50 p-4"
+          className="mt-6 flex flex-col gap-3 rounded-md border border-border bg-surface-muted p-4"
         >
-          <h3 className="text-sm font-semibold text-gray-700">질문 추가</h3>
+          <h3 className="text-sm font-semibold text-foreground">질문 추가</h3>
           <label className="flex flex-col gap-1 text-sm">
             질문
             <input
@@ -117,45 +120,46 @@ export default async function InterviewDetailPage({
               name="question"
               required
               placeholder="예: pnpm과 npm의 차이가 뭔가요?"
-              className="rounded-md border border-gray-300 bg-white px-3 py-2 focus:border-gray-500 focus:outline-none"
+              className="rounded-md border border-border bg-input px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            당시 내 답변 <span className="text-xs font-normal text-gray-400">(선택)</span>
+            당시 내 답변 <span className="text-xs font-normal text-muted-foreground">(선택)</span>
             <textarea
               name="answerAtTime"
               rows={2}
-              className="rounded-md border border-gray-300 bg-white px-3 py-2 focus:border-gray-500 focus:outline-none"
+              className="rounded-md border border-border bg-input px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            다시 준비한 답변 <span className="text-xs font-normal text-gray-400">(선택)</span>
+            다시 준비한 답변{" "}
+            <span className="text-xs font-normal text-muted-foreground">(선택)</span>
             <textarea
               name="preparedAnswer"
               rows={2}
-              className="rounded-md border border-gray-300 bg-white px-3 py-2 focus:border-gray-500 focus:outline-none"
+              className="rounded-md border border-border bg-input px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            태그 <span className="text-xs font-normal text-gray-400">(쉼표로 구분)</span>
+            태그 <span className="text-xs font-normal text-muted-foreground">(쉼표로 구분)</span>
             <input
               type="text"
               name="tags"
               placeholder="예: react, 빌드도구, 컬처핏"
-              className="rounded-md border border-gray-300 bg-white px-3 py-2 focus:border-gray-500 focus:outline-none"
+              className="rounded-md border border-border bg-input px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/25"
             />
           </label>
           {error === "missing-question" && (
-            <p className="text-sm text-red-600">질문을 입력해 주세요.</p>
+            <p className="text-sm text-danger">질문을 입력해 주세요.</p>
           )}
           <button
             type="submit"
-            className="rounded-md bg-gray-900 py-2 text-sm font-medium text-white hover:bg-gray-700"
+            className="rounded-md bg-primary py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
           >
             추가
           </button>
         </form>
       </section>
-    </main>
+    </AppShell>
   );
 }
