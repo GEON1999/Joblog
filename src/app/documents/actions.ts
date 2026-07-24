@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/require-user";
 import { getDb } from "@/lib/db";
 import { applicationDocuments, applications, documents, type DocumentKind } from "@/lib/db/schema";
-import { sanitizeFileName, validateDocumentFile } from "@/lib/domain/document-file";
+import { buildStorageKey, validateDocumentFile } from "@/lib/domain/document-file";
 import { createStorageClient, DOCUMENTS_BUCKET } from "@/lib/supabase/storage";
 import { isUuid } from "@/lib/uuid";
 
@@ -36,14 +36,20 @@ export async function uploadDocument(formData: FormData) {
     redirect(`/documents?error=${validation.reason}`);
   }
 
-  // 파일 먼저 올리고, 성공하면 레코드를 만든다 — 실패 시 고아 레코드를 남기지 않기 위해 (ADR 0008)
-  const storagePath = `${crypto.randomUUID()}/${sanitizeFileName(file.name)}`;
+  // 파일 먼저 올리고, 성공하면 레코드를 만든다 — 실패 시 고아 레코드를 남기지 않기 위해 (ADR 0008).
+  // 키는 UUID+확장자(ASCII) — Supabase Storage는 한글 등 non-ASCII 키를 거부한다.
+  // 본문은 ArrayBuffer로 넘겨 런타임별 File 스트리밍 차이를 없앤다.
+  const storagePath = buildStorageKey(crypto.randomUUID(), file.name);
   const storage = createStorageClient();
   const { error: uploadError } = await storage.storage
     .from(DOCUMENTS_BUCKET)
-    .upload(storagePath, file, { contentType: file.type || undefined, upsert: false });
+    .upload(storagePath, await file.arrayBuffer(), {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
 
   if (uploadError) {
+    console.error("[uploadDocument] storage upload failed:", uploadError.message);
     redirect("/documents?error=upload-failed");
   }
 

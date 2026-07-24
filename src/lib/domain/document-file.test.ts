@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { MAX_DOCUMENT_BYTES, sanitizeFileName, validateDocumentFile } from "./document-file";
+import { buildStorageKey, MAX_DOCUMENT_BYTES, validateDocumentFile } from "./document-file";
 
 describe("validateDocumentFile", () => {
   it("허용 확장자 + 적정 크기는 통과", () => {
@@ -31,21 +31,22 @@ describe("validateDocumentFile", () => {
   });
 });
 
-describe("sanitizeFileName", () => {
-  it("경로 구분자를 밀어내 경로 탈출을 막는다", () => {
-    expect(sanitizeFileName("../../etc/passwd")).toBe("etc_passwd");
-    expect(sanitizeFileName("a/b\\c.pdf")).toBe("a_b_c.pdf");
+describe("buildStorageKey", () => {
+  const uuid = "11111111-2222-3333-4444-555555555555";
+
+  it("한글 파일명이어도 키는 ASCII(uuid + 확장자)만 담는다", () => {
+    expect(buildStorageKey(uuid, "이력서 v3 최종.pdf")).toBe(`${uuid}.pdf`);
   });
 
-  it("공백을 밑줄로 바꾸고 한글·숫자는 보존한다", () => {
-    expect(sanitizeFileName("이력서 v3 최종.pdf")).toBe("이력서_v3_최종.pdf");
+  it("확장자는 소문자로 보존한다", () => {
+    expect(buildStorageKey(uuid, "resume.DOCX")).toBe(`${uuid}.docx`);
   });
 
-  it("선행 점을 제거한다", () => {
-    expect(sanitizeFileName(".hidden.pdf")).toBe("hidden.pdf");
+  it("확장자가 없으면 uuid만", () => {
+    expect(buildStorageKey(uuid, "noext")).toBe(uuid);
   });
 
-  it("전부 제거되면 기본값 file", () => {
-    expect(sanitizeFileName("///")).toBe("file");
+  it("경로 구분자가 든 파일명도 키에 새지 않는다 (경로 탈출 차단)", () => {
+    expect(buildStorageKey(uuid, "../../etc/passwd.pdf")).toBe(`${uuid}.pdf`);
   });
 });

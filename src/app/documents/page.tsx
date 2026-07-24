@@ -17,7 +17,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   "invalid-kind": "문서 종류가 올바르지 않습니다.",
   "missing-file": "파일을 선택해 주세요.",
   empty: "빈 파일은 업로드할 수 없습니다.",
-  "too-large": "파일이 너무 큽니다 (최대 10MB).",
+  "too-large": "파일이 너무 큽니다 (최대 4MB).",
   "bad-extension": "허용되지 않은 파일 형식입니다.",
   "upload-failed": "업로드에 실패했습니다. 잠시 후 다시 시도해 주세요.",
   "delete-failed": "파일 삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.",
