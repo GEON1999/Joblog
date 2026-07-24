@@ -4,8 +4,10 @@ import { getDb } from "@/lib/db";
 import {
   applications,
   companies,
+  postingSnapshots,
   stageTransitions,
   type Application,
+  type PostingSnapshot,
   type StageTransition,
 } from "@/lib/db/schema";
 
@@ -13,6 +15,7 @@ export interface ApplicationDetail {
   application: Application;
   companyName: string;
   transitions: StageTransition[];
+  snapshot: PostingSnapshot | null;
 }
 
 export async function getApplicationDetail(id: string): Promise<ApplicationDetail | null> {
@@ -34,7 +37,12 @@ export async function getApplicationDetail(id: string): Promise<ApplicationDetai
     .where(eq(stageTransitions.applicationId, id))
     .orderBy(asc(stageTransitions.occurredAt));
 
-  return { ...row, transitions };
+  const [snapshot] = await db
+    .select()
+    .from(postingSnapshots)
+    .where(eq(postingSnapshots.applicationId, id));
+
+  return { ...row, transitions, snapshot: snapshot ?? null };
 }
 
 export interface ArchivedApplication {

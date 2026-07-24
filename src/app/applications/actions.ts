@@ -9,6 +9,7 @@ import { getDb } from "@/lib/db";
 import {
   applications,
   companies,
+  postingSnapshots,
   stageTransitions,
   type Outcome,
   type Stage,
@@ -24,6 +25,8 @@ export async function createApplication(formData: FormData) {
   const companyName = String(formData.get("companyName") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
   const appliedAtRaw = String(formData.get("appliedAt") ?? "").trim();
+  const postingContent = String(formData.get("postingContent") ?? "").trim();
+  const postingUrl = String(formData.get("postingUrl") ?? "").trim();
 
   if (!companyName || !title) {
     redirect("/applications/new?error=missing");
@@ -54,6 +57,15 @@ export async function createApplication(formData: FormData) {
       toStage: "applied",
       occurredAt: appliedAt,
     });
+
+    // 공고 원문을 붙여넣었다면 지원 시점 스냅샷으로 함께 보존한다 — ADR 0004
+    if (postingContent) {
+      await tx.insert(postingSnapshots).values({
+        applicationId: application.id,
+        content: postingContent,
+        sourceUrl: postingUrl || null,
+      });
+    }
   });
 
   revalidatePath("/");
@@ -103,6 +115,33 @@ export async function moveApplicationStage(
 
   revalidatePath("/");
   return result;
+}
+
+export async function savePostingSnapshot(applicationId: string, formData: FormData) {
+  await requireUser();
+
+  if (!isUuid(applicationId)) {
+    redirect("/");
+  }
+
+  const content = String(formData.get("content") ?? "").trim();
+  const sourceUrl = String(formData.get("sourceUrl") ?? "").trim();
+
+  if (!content) {
+    redirect(`/applications/${applicationId}/snapshot?error=missing`);
+  }
+
+  // 지원당 스냅샷 하나 — 이미 있으면 덮어쓴다 (수정 허용, ADR 0004)
+  await getDb()
+    .insert(postingSnapshots)
+    .values({ applicationId, content, sourceUrl: sourceUrl || null })
+    .onConflictDoUpdate({
+      target: postingSnapshots.applicationId,
+      set: { content, sourceUrl: sourceUrl || null },
+    });
+
+  revalidatePath(`/applications/${applicationId}`);
+  redirect(`/applications/${applicationId}`);
 }
 
 export async function closeApplication(

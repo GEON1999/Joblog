@@ -69,6 +69,27 @@ export default async function NewApplicationPage({
           />
           <span className="text-xs text-gray-400">비워두면 오늘로 기록됩니다</span>
         </label>
+        <label className="flex flex-col gap-1 text-sm">
+          공고 URL <span className="text-xs font-normal text-gray-400">(선택)</span>
+          <input
+            type="url"
+            name="postingUrl"
+            placeholder="https://..."
+            className="rounded-md border border-gray-300 px-3 py-2 focus:border-gray-500 focus:outline-none"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          공고 본문 <span className="text-xs font-normal text-gray-400">(선택)</span>
+          <textarea
+            name="postingContent"
+            rows={8}
+            placeholder="공고가 내려가기 전에 원문을 붙여넣어 보존하세요"
+            className="rounded-md border border-gray-300 px-3 py-2 font-mono text-xs focus:border-gray-500 focus:outline-none"
+          />
+          <span className="text-xs text-gray-400">
+            지원 시점의 원문이 그대로 저장됩니다. 나중에 상세에서 추가할 수도 있습니다.
+          </span>
+        </label>
         {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
         <button
           type="submit"

@@ -38,7 +38,7 @@ export default async function ApplicationDetailPage({
     notFound();
   }
 
-  const { application, companyName, transitions } = detail;
+  const { application, companyName, transitions, snapshot } = detail;
   const isInProgress = application.outcome === "in_progress";
   const now = new Date();
 
@@ -89,6 +89,45 @@ export default async function ApplicationDetailPage({
             );
           })}
         </ol>
+      </section>
+
+      <section className="mt-8">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold text-gray-700">공고 스냅샷</h2>
+          <Link
+            href={`/applications/${application.id}/snapshot`}
+            className="text-xs text-gray-500 hover:underline"
+          >
+            {snapshot ? "수정" : "원문 붙여넣기"}
+          </Link>
+        </div>
+        {snapshot ? (
+          <>
+            <p className="mt-1 text-xs text-gray-500">
+              {formatDate(snapshot.capturedAt)} 저장
+              {snapshot.sourceUrl && (
+                <>
+                  {" · "}
+                  <a
+                    href={snapshot.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    원본 링크
+                  </a>
+                </>
+              )}
+            </p>
+            <pre className="mt-3 max-h-96 overflow-y-auto rounded-md border border-gray-200 bg-gray-50 p-4 text-xs whitespace-pre-wrap text-gray-700">
+              {snapshot.content}
+            </pre>
+          </>
+        ) : (
+          <p className="mt-2 text-sm text-gray-500">
+            공고 원문이 저장되지 않았습니다. 공고가 내려가기 전에 붙여넣어 두세요.
+          </p>
+        )}
       </section>
 
       <section className="mt-8">
