@@ -46,7 +46,7 @@ JobLog를 1인용 개인 도구에서 **누구나 공개 가입 가능한 오픈
 - **격리 정확성이 앱 코드에 달려 있다.** `userId` 필터 누락은 곧 데이터 유출이다. 쿼리 함수 시그니처의 명시적 `userId`, 소유권 검증 헬퍼, 셀프리뷰 체크리스트로 방어한다.
 - **기존 본인 데이터는 백필된다.** 전 루트 행의 `userId`를 오너 계정 uid로 채운다(`nullable 추가 → 백필 → NOT NULL`). 담당자 계정과 격리되어 본인 데이터는 본인만 본다.
 - **`companies.name` 전역 유니크가 깨진다.** 두 유저가 같은 회사명을 못 쓰는 문제를 피하려 `unique(userId, name)` 복합 유니크로 바꾼다.
-- **service role 스토리지는 여전히 앱이 격리를 책임진다.** 다운로드 서명/스트리밍 전 `document.userId === 현재유저`를 반드시 검증한다. 경로를 `{userId}/{documentId}/{원본파일명}`로 네임스페이싱해 정리·감사를 쉽게 하고, 향후 스토리지 RLS 전환의 발판을 만든다.
+- **service role 스토리지는 여전히 앱이 격리를 책임진다.** 다운로드 서명/스트리밍 전 `document.userId === 현재유저`를 반드시 검증한다. 경로를 `{userId}/{object}`로 유저 폴더에 네임스페이싱해 정리·감사를 쉽게 하고, 향후 스토리지 RLS 전환의 발판을 만든다. `{object}`는 랜덤 UUID + 확장자다 — documentId가 업로드 후 insert에서야 정해지고(고아 방지, ADR 0008), Supabase Storage 키가 non-ASCII(한글 파일명)를 거부하기 때문이다. 원본 파일명은 DB에만 보존한다.
 - **캡차는 로그인·가입 모든 auth 엔드포인트에 적용된다.** Supabase에서 CAPTCHA를 켜면 오너 로그인 폼에도 `captchaToken`이 필요하다(인비저블이라 마찰 미미).
 - **신규 운영 준비물**: Supabase 대시보드에서 Confirm email OFF, Allow signups ON, CAPTCHA(Turnstile) 활성화. 신규 env `ICS_FEED_SECRET`, `TURNSTILE_SECRET_KEY`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY`. `AUTH_ALLOWED_EMAILS`는 오너 목록으로 존치.
 

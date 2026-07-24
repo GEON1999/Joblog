@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth/require-user";
@@ -14,6 +14,7 @@ import {
   offers,
   stageTransitions,
 } from "@/lib/db/schema";
+import { SAMPLE_COMPANY_NAMES } from "@/lib/domain/sample-data";
 
 // 온보딩 체험용 가상 데이터 (ADR 0010). 완전히 가공된 데이터로, 개인정보를 담지 않는다.
 // 신규 가입자가 "샘플 채우기"로 채워진 보드·차트를 즉시 보게 하고, "비우기"로 초기화한다.
@@ -35,11 +36,7 @@ export async function seedSampleData() {
   await getDb().transaction(async (tx) => {
     const [acme, globex, initech] = await tx
       .insert(companies)
-      .values([
-        { userId: user.id, name: "Acme (샘플)" },
-        { userId: user.id, name: "Globex (샘플)" },
-        { userId: user.id, name: "Initech (샘플)" },
-      ])
+      .values(SAMPLE_COMPANY_NAMES.map((name) => ({ userId: user.id, name })))
       .returning({ id: companies.id });
 
     // 서류 단계 진행중
@@ -219,15 +216,25 @@ export async function seedSampleData() {
   revalidatePath("/archive");
 }
 
-// 현재 유저의 파이프라인 데이터를 비운다 (체험 초기화).
-// applications 를 먼저 지우면 자식(transitions·interviews·offers·next_actions)은 cascade 로 정리된다.
-// 업로드 문서는 스토리지 파일을 동반하므로 여기서 건드리지 않는다 — 문서는 라이브러리에서 개별 삭제한다.
-export async function clearMyData() {
+// 샘플 데이터만 지운다 — 마커가 붙은 샘플 회사와 그에 딸린 지원만 삭제하므로,
+// 사용자가 직접 입력한 실데이터는 절대 건드리지 않는다.
+// 샘플 회사의 applications 를 먼저 지우면 자식(transitions·interviews·offers·next_actions)은 cascade 로 정리된다.
+export async function clearSampleData() {
   const user = await requireUser();
 
   await getDb().transaction(async (tx) => {
-    await tx.delete(applications).where(eq(applications.userId, user.id));
-    await tx.delete(companies).where(eq(companies.userId, user.id));
+    const sampleCompanies = await tx
+      .select({ id: companies.id })
+      .from(companies)
+      .where(and(eq(companies.userId, user.id), inArray(companies.name, SAMPLE_COMPANY_NAMES)));
+    const ids = sampleCompanies.map((row) => row.id);
+    if (ids.length === 0) {
+      return;
+    }
+    await tx
+      .delete(applications)
+      .where(and(eq(applications.userId, user.id), inArray(applications.companyId, ids)));
+    await tx.delete(companies).where(inArray(companies.id, ids));
   });
 
   revalidatePath("/");

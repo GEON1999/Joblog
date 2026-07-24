@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 
-import { clearMyData, seedSampleData } from "@/app/onboarding/actions";
+import { clearSampleData, seedSampleData } from "@/app/onboarding/actions";
 
 // 첫 방문 1회 코치마크 + 샘플 데이터 채우기/비우기 (ADR 0010).
 // "봤음" 플래그는 기기별 localStorage 에 둔다 — 잠깐 체험하는 담당자에겐 테이블 신설이 과하다.
@@ -30,7 +30,7 @@ function markSeen() {
   listeners.forEach((listener) => listener());
 }
 
-export function OnboardingGuide({ hasData }: { hasData: boolean }) {
+export function OnboardingGuide({ hasData, hasSample }: { hasData: boolean; hasSample: boolean }) {
   const seen = useSyncExternalStore(subscribe, getSeen, getServerSeen);
 
   // 첫 방문 카드: 아직 안 봤고, 데이터가 비어 있을 때만. (이미 쓰던 유저는 방해하지 않는다)
@@ -66,13 +66,14 @@ export function OnboardingGuide({ hasData }: { hasData: boolean }) {
         </div>
       )}
 
-      {/* 첫 방문 카드를 지난 뒤에도 언제든 채우기/비우기 가능한 작은 컨트롤 */}
+      {/* 첫 방문 카드를 지난 뒤에도 언제든 샘플 채우기/비우기 가능한 작은 컨트롤.
+          비우기는 샘플 데이터만 지우므로 실데이터 손실이 없다. */}
       {(seen || hasData) && (
         <div className="mb-4 flex justify-end gap-3 text-xs text-muted-foreground">
-          {hasData ? (
-            <form action={clearMyData}>
+          {hasSample ? (
+            <form action={clearSampleData}>
               <button type="submit" className="hover:text-danger hover:underline">
-                내 데이터 비우기
+                샘플 데이터 비우기
               </button>
             </form>
           ) : (

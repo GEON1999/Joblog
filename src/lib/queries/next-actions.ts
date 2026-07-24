@@ -3,12 +3,18 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { applications, companies, nextActions, type NextAction } from "@/lib/db/schema";
 
-export async function getNextActionsForApplication(applicationId: string): Promise<NextAction[]> {
+export async function getNextActionsForApplication(
+  applicationId: string,
+  userId: string,
+): Promise<NextAction[]> {
+  // 부모 지원을 조인해 소유권을 시그니처에 드러낸다 (ADR 0010) — 내 지원의 액션만 반환
   return getDb()
-    .select()
+    .select({ action: nextActions })
     .from(nextActions)
-    .where(eq(nextActions.applicationId, applicationId))
-    .orderBy(asc(nextActions.dueAt));
+    .innerJoin(applications, eq(nextActions.applicationId, applications.id))
+    .where(and(eq(nextActions.applicationId, applicationId), eq(applications.userId, userId)))
+    .orderBy(asc(nextActions.dueAt))
+    .then((rows) => rows.map((row) => row.action));
 }
 
 export interface PendingAction {

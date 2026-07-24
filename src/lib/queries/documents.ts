@@ -68,10 +68,14 @@ export async function getUnlinkedDocuments(
   applicationId: string,
   userId: string,
 ): Promise<Document[]> {
+  // 링크도 내 문서로 한정한다 — 이 지원에 연결된 문서 중 내 소유만 "이미 연결됨"으로 센다
   const linked = await getDb()
     .select({ documentId: applicationDocuments.documentId })
     .from(applicationDocuments)
-    .where(eq(applicationDocuments.applicationId, applicationId));
+    .innerJoin(documents, eq(applicationDocuments.documentId, documents.id))
+    .where(
+      and(eq(applicationDocuments.applicationId, applicationId), eq(documents.userId, userId)),
+    );
   const linkedIds = new Set(linked.map((row) => row.documentId));
 
   const all = await getDb()

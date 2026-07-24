@@ -52,10 +52,10 @@ export async function signUp(formData: FormData) {
   });
 
   if (error) {
-    const reason = error.message.toLowerCase().includes("already")
-      ? "email-taken"
-      : "signup-failed";
-    redirect(`/login?mode=signup&error=${reason}`);
+    // 안정적인 에러 코드를 우선 보고, 구버전 대비 메시지 매칭을 폴백으로 둔다
+    const isDuplicate =
+      error.code === "user_already_exists" || error.message.toLowerCase().includes("already");
+    redirect(`/login?mode=signup&error=${isDuplicate ? "email-taken" : "signup-failed"}`);
   }
 
   // Confirm email이 켜져 있으면 세션이 없을 수 있다 — 이 경우 확인 안내로 보낸다

@@ -11,7 +11,6 @@ import { getDb } from "@/lib/db";
 import { applicationDocuments, documents, type DocumentKind } from "@/lib/db/schema";
 import {
   buildStorageKey,
-  MAX_DOCUMENTS_PER_USER,
   MAX_TOTAL_DOCUMENT_BYTES_PER_USER,
   validateDocumentFile,
 } from "@/lib/domain/document-file";
@@ -44,12 +43,9 @@ export async function uploadDocument(formData: FormData) {
     redirect(`/documents?error=${validation.reason}`);
   }
 
-  // 비오너(공개 가입자) 스토리지 쿼터 — 남용/비용 방어 (ADR 0010). 오너는 면제된다.
+  // 비오너(공개 가입자) 스토리지 총량 쿼터 — 남용/비용 방어 (ADR 0010). 오너는 면제된다.
   if (!isOwner(user.email)) {
     const usage = await getDocumentUsage(user.id);
-    if (usage.count >= MAX_DOCUMENTS_PER_USER) {
-      redirect("/documents?error=quota-count");
-    }
     if (usage.totalBytes + file.size > MAX_TOTAL_DOCUMENT_BYTES_PER_USER) {
       redirect("/documents?error=quota-size");
     }

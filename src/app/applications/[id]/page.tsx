@@ -53,14 +53,13 @@ export default async function ApplicationDetailPage({
     notFound();
   }
 
-  // 소유권은 getApplicationDetail 이 검증한다 — 내 지원이 아니면 detail 이 null 이라 notFound 로 떨어진다.
-  // 자식 조회는 부모 소유권에 의존하므로, detail 이 truthy 일 때만 실제로 렌더된다.
+  // 모든 조회가 user.id 로 소유권을 스코프한다 — 내 지원이 아니면 전부 빈 결과이고 detail 이 null 이라 notFound.
   const [detail, interviews, actions, offer, linkedDocuments, unlinkedDocuments] =
     await Promise.all([
       getApplicationDetail(id, user.id),
-      getInterviewsForApplication(id),
-      getNextActionsForApplication(id),
-      getOfferForApplication(id),
+      getInterviewsForApplication(id, user.id),
+      getNextActionsForApplication(id, user.id),
+      getOfferForApplication(id, user.id),
       getDocumentsForApplication(id, user.id),
       getUnlinkedDocuments(id, user.id),
     ]);

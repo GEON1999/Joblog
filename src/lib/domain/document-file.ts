@@ -1,8 +1,8 @@
 // Vercel 서버리스 요청 본문 한도(4.5MB) 아래로 둔다 — 초과 시 우리 검증 대신 플랫폼 에러가 난다
 export const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024; // 4MB
 
-// 비오너(공개 가입자) 스토리지 쿼터 — 남용/비용 방어 (ADR 0010). 오너는 면제된다.
-export const MAX_DOCUMENTS_PER_USER = 10;
+// 비오너(공개 가입자) 스토리지 총량 쿼터 — 남용/비용 방어 (ADR 0010). 오너는 면제된다.
+// ADR은 "스토리지 총량 쿼터"만 채택하고 행 개수 상한은 향후로 남겼으므로, 총 바이트만 제한한다.
 export const MAX_TOTAL_DOCUMENT_BYTES_PER_USER = 30 * 1024 * 1024; // 30MB
 
 // 제출 문서로 흔한 형식만 허용한다

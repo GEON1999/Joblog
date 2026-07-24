@@ -10,12 +10,18 @@ import {
   type InterviewQuestion,
 } from "@/lib/db/schema";
 
-export async function getInterviewsForApplication(applicationId: string): Promise<Interview[]> {
+export async function getInterviewsForApplication(
+  applicationId: string,
+  userId: string,
+): Promise<Interview[]> {
+  // 부모 지원을 조인해 소유권을 시그니처에 드러낸다 (ADR 0010) — 내 지원의 면접만 반환
   return getDb()
-    .select()
+    .select({ interview: interviews })
     .from(interviews)
-    .where(eq(interviews.applicationId, applicationId))
-    .orderBy(asc(interviews.createdAt));
+    .innerJoin(applications, eq(interviews.applicationId, applications.id))
+    .where(and(eq(interviews.applicationId, applicationId), eq(applications.userId, userId)))
+    .orderBy(asc(interviews.createdAt))
+    .then((rows) => rows.map((row) => row.interview));
 }
 
 export interface InterviewDetail {
