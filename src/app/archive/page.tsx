@@ -5,6 +5,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { EmptyState, PageHeader } from "@/components/ui/layout";
 import { OUTCOME_LABELS } from "@/lib/domain/outcome";
 import { STAGE_LABELS } from "@/lib/domain/stage";
+import { requireUser } from "@/lib/auth/require-user";
 import { formatDate } from "@/lib/format";
 import { getArchivedApplications } from "@/lib/queries/application-detail";
 
@@ -17,7 +18,8 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function ArchivePage() {
-  const archived = await getArchivedApplications();
+  const user = await requireUser();
+  const archived = await getArchivedApplications(user.id);
 
   return (
     <AppShell>

@@ -1,14 +1,19 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { applications, companies, offers, type Offer } from "@/lib/db/schema";
 
-export async function getOfferForApplication(applicationId: string): Promise<Offer | null> {
-  const [offer] = await getDb()
-    .select()
+export async function getOfferForApplication(
+  applicationId: string,
+  userId: string,
+): Promise<Offer | null> {
+  // 부모 지원을 조인해 소유권을 시그니처에 드러낸다 (ADR 0010) — 내 지원의 오퍼만 반환
+  const [row] = await getDb()
+    .select({ offer: offers })
     .from(offers)
-    .where(eq(offers.applicationId, applicationId));
-  return offer ?? null;
+    .innerJoin(applications, eq(offers.applicationId, applications.id))
+    .where(and(eq(offers.applicationId, applicationId), eq(applications.userId, userId)));
+  return row?.offer ?? null;
 }
 
 export interface OfferComparisonRow {
@@ -18,7 +23,7 @@ export interface OfferComparisonRow {
   companyName: string;
 }
 
-export async function getOffersForComparison(): Promise<OfferComparisonRow[]> {
+export async function getOffersForComparison(userId: string): Promise<OfferComparisonRow[]> {
   return (
     getDb()
       .select({
@@ -30,6 +35,7 @@ export async function getOffersForComparison(): Promise<OfferComparisonRow[]> {
       .from(offers)
       .innerJoin(applications, eq(offers.applicationId, applications.id))
       .innerJoin(companies, eq(applications.companyId, companies.id))
+      .where(eq(applications.userId, userId))
       // 연봉 높은 순, 미정(null)은 맨 뒤로
       .orderBy(sql`${offers.annualSalary} desc nulls last`)
   );

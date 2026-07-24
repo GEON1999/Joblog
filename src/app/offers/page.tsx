@@ -9,6 +9,7 @@ import {
   collectExtraLabels,
   extrasToMap,
 } from "@/lib/domain/offer";
+import { requireUser } from "@/lib/auth/require-user";
 import { getOffersForComparison } from "@/lib/queries/offers";
 
 export const metadata: Metadata = {
@@ -20,7 +21,8 @@ export const dynamic = "force-dynamic";
 const DASH = "—";
 
 export default async function OffersPage() {
-  const rows = await getOffersForComparison();
+  const user = await requireUser();
+  const rows = await getOffersForComparison(user.id);
   const extraLabels = collectExtraLabels(rows.map((row) => row.offer));
 
   // 연봉 최고치 강조 기준. 비교 대상이 하나뿐이면 강조하지 않는다

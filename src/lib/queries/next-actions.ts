@@ -3,12 +3,18 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { applications, companies, nextActions, type NextAction } from "@/lib/db/schema";
 
-export async function getNextActionsForApplication(applicationId: string): Promise<NextAction[]> {
+export async function getNextActionsForApplication(
+  applicationId: string,
+  userId: string,
+): Promise<NextAction[]> {
+  // 부모 지원을 조인해 소유권을 시그니처에 드러낸다 (ADR 0010) — 내 지원의 액션만 반환
   return getDb()
-    .select()
+    .select({ action: nextActions })
     .from(nextActions)
-    .where(eq(nextActions.applicationId, applicationId))
-    .orderBy(asc(nextActions.dueAt));
+    .innerJoin(applications, eq(nextActions.applicationId, applications.id))
+    .where(and(eq(nextActions.applicationId, applicationId), eq(applications.userId, userId)))
+    .orderBy(asc(nextActions.dueAt))
+    .then((rows) => rows.map((row) => row.action));
 }
 
 export interface PendingAction {
@@ -22,7 +28,7 @@ export interface PendingAction {
  * 진행중인 지원의 미완료 액션 — 대시보드 임박/지연 목록과 ICS 피드의 원천.
  * 종료된 지원의 액션은 더 이상 챙길 일이 아니므로 제외한다 (팔로업 배지와 동일 기준).
  */
-export async function getPendingActions(): Promise<PendingAction[]> {
+export async function getPendingActions(userId: string): Promise<PendingAction[]> {
   const rows = await getDb()
     .select({
       action: nextActions,
@@ -33,18 +39,25 @@ export async function getPendingActions(): Promise<PendingAction[]> {
     .from(nextActions)
     .innerJoin(applications, eq(nextActions.applicationId, applications.id))
     .innerJoin(companies, eq(applications.companyId, companies.id))
-    .where(and(isNull(nextActions.doneAt), eq(applications.outcome, "in_progress")))
+    .where(
+      and(
+        eq(applications.userId, userId),
+        isNull(nextActions.doneAt),
+        eq(applications.outcome, "in_progress"),
+      ),
+    )
     .orderBy(asc(nextActions.dueAt));
 
   return rows;
 }
 
 /** 미완료 액션이 하나라도 있는 지원 id 집합 — 팔로업 배지 계산에 쓴다 */
-export async function getApplicationIdsWithPendingActions(): Promise<Set<string>> {
+export async function getApplicationIdsWithPendingActions(userId: string): Promise<Set<string>> {
   const rows = await getDb()
     .selectDistinct({ applicationId: nextActions.applicationId })
     .from(nextActions)
-    .where(isNull(nextActions.doneAt));
+    .innerJoin(applications, eq(nextActions.applicationId, applications.id))
+    .where(and(eq(applications.userId, userId), isNull(nextActions.doneAt)));
 
   return new Set(rows.map((row) => row.applicationId));
 }

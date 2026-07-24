@@ -3,6 +3,8 @@ import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { notFound } from "next/navigation";
 
+import { requireUser } from "@/lib/auth/require-user";
+
 import type { Outcome } from "@/lib/db/schema";
 import { daysInStage } from "@/lib/domain/days-in-stage";
 import { CLOSED_OUTCOMES, OUTCOME_LABELS } from "@/lib/domain/outcome";
@@ -46,19 +48,20 @@ export default async function ApplicationDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  const [{ id }, { error }] = await Promise.all([params, searchParams]);
+  const [user, { id }, { error }] = await Promise.all([requireUser(), params, searchParams]);
   if (!isUuid(id)) {
     notFound();
   }
 
+  // 모든 조회가 user.id 로 소유권을 스코프한다 — 내 지원이 아니면 전부 빈 결과이고 detail 이 null 이라 notFound.
   const [detail, interviews, actions, offer, linkedDocuments, unlinkedDocuments] =
     await Promise.all([
-      getApplicationDetail(id),
-      getInterviewsForApplication(id),
-      getNextActionsForApplication(id),
-      getOfferForApplication(id),
-      getDocumentsForApplication(id),
-      getUnlinkedDocuments(id),
+      getApplicationDetail(id, user.id),
+      getInterviewsForApplication(id, user.id),
+      getNextActionsForApplication(id, user.id),
+      getOfferForApplication(id, user.id),
+      getDocumentsForApplication(id, user.id),
+      getUnlinkedDocuments(id, user.id),
     ]);
   if (!detail) {
     notFound();

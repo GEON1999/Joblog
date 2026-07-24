@@ -4,15 +4,16 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { ownsApplication, ownsNextAction } from "@/lib/auth/ownership";
 import { requireUser } from "@/lib/auth/require-user";
 import { getDb } from "@/lib/db";
-import { applications, nextActions, type NextActionKind } from "@/lib/db/schema";
+import { nextActions, type NextActionKind } from "@/lib/db/schema";
 import { parseKstDateTime } from "@/lib/domain/kst-datetime";
 import { NEXT_ACTION_KINDS } from "@/lib/domain/next-action";
 import { isUuid } from "@/lib/uuid";
 
 export async function createNextAction(applicationId: string, formData: FormData) {
-  await requireUser();
+  const user = await requireUser();
 
   if (!isUuid(applicationId)) {
     redirect("/");
@@ -35,12 +36,7 @@ export async function createNextAction(applicationId: string, formData: FormData
     redirect(`${detailPath}?error=invalid-action-due`);
   }
 
-  const [application] = await getDb()
-    .select({ id: applications.id })
-    .from(applications)
-    .where(eq(applications.id, applicationId));
-
-  if (!application) {
+  if (!(await ownsApplication(user.id, applicationId))) {
     redirect("/");
   }
 
@@ -53,9 +49,13 @@ export async function createNextAction(applicationId: string, formData: FormData
 }
 
 export async function toggleNextActionDone(nextActionId: string, applicationId: string) {
-  await requireUser();
+  const user = await requireUser();
 
   if (!isUuid(nextActionId) || !isUuid(applicationId)) {
+    redirect("/");
+  }
+
+  if (!(await ownsNextAction(user.id, nextActionId))) {
     redirect("/");
   }
 

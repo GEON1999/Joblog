@@ -4,17 +4,24 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { isOwner } from "@/lib/auth/owner";
+import { ownsApplication } from "@/lib/auth/ownership";
 import { requireUser } from "@/lib/auth/require-user";
 import { getDb } from "@/lib/db";
-import { applicationDocuments, applications, documents, type DocumentKind } from "@/lib/db/schema";
-import { buildStorageKey, validateDocumentFile } from "@/lib/domain/document-file";
+import { applicationDocuments, documents, type DocumentKind } from "@/lib/db/schema";
+import {
+  buildStorageKey,
+  MAX_TOTAL_DOCUMENT_BYTES_PER_USER,
+  validateDocumentFile,
+} from "@/lib/domain/document-file";
+import { getDocumentUsage } from "@/lib/queries/documents";
 import { createStorageClient, DOCUMENTS_BUCKET } from "@/lib/supabase/storage";
 import { isUuid } from "@/lib/uuid";
 
 const DOCUMENT_KINDS = ["resume", "portfolio", "cover_letter", "other"];
 
 export async function uploadDocument(formData: FormData) {
-  await requireUser();
+  const user = await requireUser();
 
   const name = String(formData.get("name") ?? "").trim();
   const kindRaw = String(formData.get("kind") ?? "");
@@ -36,10 +43,18 @@ export async function uploadDocument(formData: FormData) {
     redirect(`/documents?error=${validation.reason}`);
   }
 
+  // 비오너(공개 가입자) 스토리지 총량 쿼터 — 남용/비용 방어 (ADR 0010). 오너는 면제된다.
+  if (!isOwner(user.email)) {
+    const usage = await getDocumentUsage(user.id);
+    if (usage.totalBytes + file.size > MAX_TOTAL_DOCUMENT_BYTES_PER_USER) {
+      redirect("/documents?error=quota-size");
+    }
+  }
+
   // 파일 먼저 올리고, 성공하면 레코드를 만든다 — 실패 시 고아 레코드를 남기지 않기 위해 (ADR 0008).
-  // 키는 UUID+확장자(ASCII) — Supabase Storage는 한글 등 non-ASCII 키를 거부한다.
+  // 키는 유저 폴더 + UUID+확장자(ASCII) — Supabase Storage는 한글 등 non-ASCII 키를 거부한다.
   // 본문은 ArrayBuffer로 넘겨 런타임별 File 스트리밍 차이를 없앤다.
-  const storagePath = buildStorageKey(crypto.randomUUID(), file.name);
+  const storagePath = buildStorageKey(user.id, crypto.randomUUID(), file.name);
   const storage = createStorageClient();
   const { error: uploadError } = await storage.storage
     .from(DOCUMENTS_BUCKET)
@@ -56,6 +71,7 @@ export async function uploadDocument(formData: FormData) {
   await getDb()
     .insert(documents)
     .values({
+      userId: user.id,
       name,
       kind: kindRaw as DocumentKind,
       storagePath,
@@ -69,16 +85,17 @@ export async function uploadDocument(formData: FormData) {
 }
 
 export async function deleteDocument(documentId: string) {
-  await requireUser();
+  const user = await requireUser();
 
   if (!isUuid(documentId)) {
     redirect("/documents");
   }
 
+  // 내 문서만 조회된다 — 남의 documentId 로는 not-found 처리된다
   const [doc] = await getDb()
     .select({ storagePath: documents.storagePath })
     .from(documents)
-    .where(eq(documents.id, documentId));
+    .where(and(eq(documents.id, documentId), eq(documents.userId, user.id)));
 
   if (!doc) {
     redirect("/documents");
@@ -94,30 +111,29 @@ export async function deleteDocument(documentId: string) {
     redirect("/documents?error=delete-failed");
   }
 
-  await getDb().delete(documents).where(eq(documents.id, documentId));
+  await getDb()
+    .delete(documents)
+    .where(and(eq(documents.id, documentId), eq(documents.userId, user.id)));
 
   revalidatePath("/documents");
   redirect("/documents");
 }
 
 export async function linkDocument(applicationId: string, formData: FormData) {
-  await requireUser();
+  const user = await requireUser();
 
   const documentId = String(formData.get("documentId") ?? "");
   if (!isUuid(applicationId) || !isUuid(documentId)) {
     redirect("/");
   }
 
-  // 지원·문서가 실제로 존재할 때만 연결한다
+  // 지원·문서가 둘 다 내 소유일 때만 연결한다
   const db = getDb();
-  const [application] = await db
-    .select({ id: applications.id })
-    .from(applications)
-    .where(eq(applications.id, applicationId));
+  const application = await ownsApplication(user.id, applicationId);
   const [document] = await db
     .select({ id: documents.id })
     .from(documents)
-    .where(eq(documents.id, documentId));
+    .where(and(eq(documents.id, documentId), eq(documents.userId, user.id)));
 
   if (application && document) {
     // 이미 연결돼 있으면 무시 (복합 PK 충돌)
@@ -133,9 +149,14 @@ export async function linkDocument(applicationId: string, formData: FormData) {
 }
 
 export async function unlinkDocument(applicationId: string, documentId: string) {
-  await requireUser();
+  const user = await requireUser();
 
   if (!isUuid(applicationId) || !isUuid(documentId)) {
+    redirect("/");
+  }
+
+  // 내 지원이 아니면 아무것도 하지 않는다
+  if (!(await ownsApplication(user.id, applicationId))) {
     redirect("/");
   }
 

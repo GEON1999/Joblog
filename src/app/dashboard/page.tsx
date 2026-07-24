@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ConversionRateChart, StageStatusChart } from "@/components/dashboard/funnel-charts";
 import { AppShell } from "@/components/layout/app-shell";
 import { Badge, Card, PageHeader, SectionTitle } from "@/components/ui/layout";
+import { requireUser } from "@/lib/auth/require-user";
 import { NEXT_ACTION_KIND_LABELS } from "@/lib/domain/next-action";
 import { STAGE_LABELS } from "@/lib/domain/stage";
 import { formatDateTime } from "@/lib/format";
@@ -26,9 +27,10 @@ function StatTile({ label, value }: { label: string; value: number }) {
 }
 
 export default async function DashboardPage() {
+  const user = await requireUser();
   const [{ totals, funnel }, pendingActions] = await Promise.all([
-    getDashboardData(),
-    getPendingActions(),
+    getDashboardData(user.id),
+    getPendingActions(user.id),
   ]);
   const now = new Date();
 

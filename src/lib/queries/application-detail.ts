@@ -1,4 +1,4 @@
-import { asc, desc, eq, ne } from "drizzle-orm";
+import { and, asc, desc, eq, ne } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import {
@@ -18,14 +18,17 @@ export interface ApplicationDetail {
   snapshot: PostingSnapshot | null;
 }
 
-export async function getApplicationDetail(id: string): Promise<ApplicationDetail | null> {
+export async function getApplicationDetail(
+  id: string,
+  userId: string,
+): Promise<ApplicationDetail | null> {
   const db = getDb();
 
   const [row] = await db
     .select({ application: applications, companyName: companies.name })
     .from(applications)
     .innerJoin(companies, eq(applications.companyId, companies.id))
-    .where(eq(applications.id, id));
+    .where(and(eq(applications.id, id), eq(applications.userId, userId)));
 
   if (!row) {
     return null;
@@ -55,7 +58,7 @@ export interface ArchivedApplication {
   closedAt: Date | null;
 }
 
-export async function getArchivedApplications(): Promise<ArchivedApplication[]> {
+export async function getArchivedApplications(userId: string): Promise<ArchivedApplication[]> {
   return getDb()
     .select({
       id: applications.id,
@@ -68,6 +71,6 @@ export async function getArchivedApplications(): Promise<ArchivedApplication[]> 
     })
     .from(applications)
     .innerJoin(companies, eq(applications.companyId, companies.id))
-    .where(ne(applications.outcome, "in_progress"))
+    .where(and(eq(applications.userId, userId), ne(applications.outcome, "in_progress")))
     .orderBy(desc(applications.closedAt));
 }

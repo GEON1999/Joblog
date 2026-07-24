@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -21,7 +21,7 @@ import { parseHttpUrl } from "@/lib/url";
 import { isUuid } from "@/lib/uuid";
 
 export async function createApplication(formData: FormData) {
-  await requireUser();
+  const user = await requireUser();
 
   const companyName = String(formData.get("companyName") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim();
@@ -44,16 +44,20 @@ export async function createApplication(formData: FormData) {
   }
 
   await getDb().transaction(async (tx) => {
-    // get-or-create: 이름이 이미 있으면 그 회사를 그대로 쓴다
+    // get-or-create: 같은 유저 안에서 이름이 이미 있으면 그 회사를 그대로 쓴다.
+    // 유니크가 (user_id, name) 이므로 conflict target도 두 컬럼이다.
     const [company] = await tx
       .insert(companies)
-      .values({ name: companyName })
-      .onConflictDoUpdate({ target: companies.name, set: { name: companyName } })
+      .values({ userId: user.id, name: companyName })
+      .onConflictDoUpdate({
+        target: [companies.userId, companies.name],
+        set: { name: companyName },
+      })
       .returning({ id: companies.id });
 
     const [application] = await tx
       .insert(applications)
-      .values({ companyId: company.id, title, appliedAt })
+      .values({ userId: user.id, companyId: company.id, title, appliedAt })
       .returning({ id: applications.id });
 
     // 초기 진입도 전환 기록으로 남긴다 — 체류 일수의 단일 출처는 stage_transitions
@@ -82,7 +86,7 @@ export async function moveApplicationStage(
   applicationId: string,
   toStage: Stage,
 ): Promise<{ error?: string }> {
-  await requireUser();
+  const user = await requireUser();
 
   // 서버 액션 인자는 신뢰할 수 없는 입력이다
   if (!isUuid(applicationId)) {
@@ -94,10 +98,11 @@ export async function moveApplicationStage(
   }
 
   const result = await getDb().transaction(async (tx) => {
+    // 소유권 스코프: 내 지원이 아니면 조회 자체가 안 되어 not-found 로 떨어진다
     const [application] = await tx
       .select({ stage: applications.stage, outcome: applications.outcome })
       .from(applications)
-      .where(eq(applications.id, applicationId));
+      .where(and(eq(applications.id, applicationId), eq(applications.userId, user.id)));
 
     if (!application) {
       return { error: "not-found" };
@@ -124,9 +129,18 @@ export async function moveApplicationStage(
 }
 
 export async function savePostingSnapshot(applicationId: string, formData: FormData) {
-  await requireUser();
+  const user = await requireUser();
 
   if (!isUuid(applicationId)) {
+    redirect("/");
+  }
+
+  // 자식(스냅샷) 쓰기 전에 부모 지원의 소유권을 검증한다
+  const [owned] = await getDb()
+    .select({ id: applications.id })
+    .from(applications)
+    .where(and(eq(applications.id, applicationId), eq(applications.userId, user.id)));
+  if (!owned) {
     redirect("/");
   }
 
@@ -160,7 +174,7 @@ export async function closeApplication(
   applicationId: string,
   outcome: Outcome,
 ): Promise<{ error?: string }> {
-  await requireUser();
+  const user = await requireUser();
 
   if (!isUuid(applicationId)) {
     return { error: "not-found" };
@@ -170,7 +184,7 @@ export async function closeApplication(
     const [application] = await tx
       .select({ outcome: applications.outcome })
       .from(applications)
-      .where(eq(applications.id, applicationId));
+      .where(and(eq(applications.id, applicationId), eq(applications.userId, user.id)));
 
     if (!application) {
       return { error: "not-found" };
@@ -196,7 +210,7 @@ export async function closeApplication(
 }
 
 export async function reopenApplication(applicationId: string): Promise<{ error?: string }> {
-  await requireUser();
+  const user = await requireUser();
 
   if (!isUuid(applicationId)) {
     return { error: "not-found" };
@@ -206,7 +220,7 @@ export async function reopenApplication(applicationId: string): Promise<{ error?
     const [application] = await tx
       .select({ outcome: applications.outcome })
       .from(applications)
-      .where(eq(applications.id, applicationId));
+      .where(and(eq(applications.id, applicationId), eq(applications.userId, user.id)));
 
     if (!application) {
       return { error: "not-found" };

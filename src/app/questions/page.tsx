@@ -5,6 +5,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 import { Badge, EmptyState, PageHeader } from "@/components/ui/layout";
+import { requireUser } from "@/lib/auth/require-user";
 import { formatDate } from "@/lib/format";
 import { getQuestionBank } from "@/lib/queries/interviews";
 
@@ -18,10 +19,14 @@ export default async function QuestionBankPage({
   searchParams: Promise<{ q?: string; tag?: string }>;
 }) {
   const { q, tag } = await searchParams;
-  const entries = await getQuestionBank({
-    keyword: q?.trim() || undefined,
-    tag: tag?.trim() || undefined,
-  });
+  const user = await requireUser();
+  const entries = await getQuestionBank(
+    {
+      keyword: q?.trim() || undefined,
+      tag: tag?.trim() || undefined,
+    },
+    user.id,
+  );
 
   return (
     <AppShell>

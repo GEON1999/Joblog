@@ -1,3 +1,5 @@
+import { eq } from "drizzle-orm";
+
 import { getDb } from "@/lib/db";
 import { applications, stageTransitions } from "@/lib/db/schema";
 import { computeFunnel, type StageFunnel } from "@/lib/domain/funnel";
@@ -12,7 +14,7 @@ export interface DashboardData {
   funnel: StageFunnel[];
 }
 
-export async function getDashboardData(): Promise<DashboardData> {
+export async function getDashboardData(userId: string): Promise<DashboardData> {
   const db = getDb();
 
   const [allApplications, allTransitions] = await Promise.all([
@@ -23,7 +25,9 @@ export async function getDashboardData(): Promise<DashboardData> {
         outcome: applications.outcome,
         closedAt: applications.closedAt,
       })
-      .from(applications),
+      .from(applications)
+      .where(eq(applications.userId, userId)),
+    // 전환 이력도 내 지원 것만 — 지원 조인으로 소유권을 스코프한다
     db
       .select({
         applicationId: stageTransitions.applicationId,
@@ -31,7 +35,9 @@ export async function getDashboardData(): Promise<DashboardData> {
         toStage: stageTransitions.toStage,
         occurredAt: stageTransitions.occurredAt,
       })
-      .from(stageTransitions),
+      .from(stageTransitions)
+      .innerJoin(applications, eq(stageTransitions.applicationId, applications.id))
+      .where(eq(applications.userId, userId)),
   ]);
 
   return {
