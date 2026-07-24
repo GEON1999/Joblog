@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { KanbanBoard } from "@/components/kanban/board";
 import { AppShell } from "@/components/layout/app-shell";
+import { OnboardingGuide } from "@/components/onboarding/onboarding-guide";
 import { requireUser } from "@/lib/auth/require-user";
 import { needsFollowUp } from "@/lib/domain/follow-up";
 import { getBoardCards } from "@/lib/queries/board";
@@ -26,6 +27,7 @@ export default async function Home() {
 
   return (
     <AppShell width="wide">
+      <OnboardingGuide hasData={boardCards.length > 0} />
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">지원 파이프라인</h1>
