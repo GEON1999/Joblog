@@ -1,5 +1,16 @@
 import { sql } from "drizzle-orm";
-import { check, index, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  check,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 // 진행 단계(Stage). 종료 여부는 outcome이 직교로 담당한다 — ADR 0003
 export const stageEnum = pgEnum("stage", [
@@ -156,6 +167,41 @@ export const interviewQuestions = pgTable(
   (table) => [index("interview_questions_interview_id_idx").on(table.interviewId)],
 ).enableRLS();
 
+export const contractTypeEnum = pgEnum("contract_type", [
+  "permanent", // 정규
+  "contract", // 계약
+  "freelance", // 프리랜서
+]);
+
+export const workModeEnum = pgEnum("work_mode", [
+  "office", // 사무실
+  "remote", // 재택
+  "hybrid", // 하이브리드
+]);
+
+export interface OfferExtra {
+  label: string;
+  value: string;
+}
+
+export const offers = pgTable("offers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  applicationId: uuid("application_id")
+    .notNull()
+    .unique() // 지원당 오퍼 하나 — CONTEXT.md
+    .references(() => applications.id, { onDelete: "cascade" }),
+  annualSalary: integer("annual_salary"), // 만원 단위, null이면 미정
+  contractType: contractTypeEnum("contract_type"),
+  workMode: workModeEnum("work_mode"),
+  crunch: boolean("crunch"), // null이면 미확인
+  extras: jsonb("extras").$type<OfferExtra[]>().notNull().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+}).enableRLS();
+
 export type Stage = (typeof stageEnum.enumValues)[number];
 export type Outcome = (typeof outcomeEnum.enumValues)[number];
 export type Company = typeof companies.$inferSelect;
@@ -164,5 +210,8 @@ export type Interview = typeof interviews.$inferSelect;
 export type InterviewQuestion = typeof interviewQuestions.$inferSelect;
 export type NextAction = typeof nextActions.$inferSelect;
 export type NextActionKind = (typeof nextActionKindEnum.enumValues)[number];
+export type Offer = typeof offers.$inferSelect;
+export type ContractType = (typeof contractTypeEnum.enumValues)[number];
+export type WorkMode = (typeof workModeEnum.enumValues)[number];
 export type Application = typeof applications.$inferSelect;
 export type StageTransition = typeof stageTransitions.$inferSelect;

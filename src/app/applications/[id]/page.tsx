@@ -11,8 +11,10 @@ import { NEXT_ACTION_KIND_LABELS, NEXT_ACTION_KINDS } from "@/lib/domain/next-ac
 import { getApplicationDetail } from "@/lib/queries/application-detail";
 import { getInterviewsForApplication } from "@/lib/queries/interviews";
 import { getNextActionsForApplication } from "@/lib/queries/next-actions";
+import { getOfferForApplication } from "@/lib/queries/offers";
 import { isUuid } from "@/lib/uuid";
 
+import { OfferSection } from "@/components/offer/offer-section";
 import { createNextAction, toggleNextActionDone } from "@/app/next-actions/actions";
 
 import { closeApplication, reopenApplication } from "../actions";
@@ -46,10 +48,11 @@ export default async function ApplicationDetailPage({
     notFound();
   }
 
-  const [detail, interviews, actions] = await Promise.all([
+  const [detail, interviews, actions, offer] = await Promise.all([
     getApplicationDetail(id),
     getInterviewsForApplication(id),
     getNextActionsForApplication(id),
+    getOfferForApplication(id),
   ]);
   if (!detail) {
     notFound();
@@ -257,6 +260,10 @@ export default async function ApplicationDetailPage({
           </p>
         )}
       </section>
+
+      {application.stage === "offer" && (
+        <OfferSection applicationId={application.id} offer={offer} error={error} />
+      )}
 
       <section className="mt-8">
         {isInProgress ? (
