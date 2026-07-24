@@ -21,6 +21,9 @@ export default async function Home() {
           <Link href="/questions" className="text-gray-500 hover:underline">
             질문 은행
           </Link>
+          <Link href="/dashboard" className="text-gray-500 hover:underline">
+            대시보드
+          </Link>
           <Link href="/archive" className="text-gray-500 hover:underline">
             아카이브
           </Link>
