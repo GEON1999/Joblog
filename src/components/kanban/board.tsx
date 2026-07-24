@@ -13,7 +13,8 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { useOptimistic, useState, useTransition } from "react";
+import Link from "next/link";
+import { useOptimistic, useRef, useState, useTransition, type RefObject } from "react";
 
 import { moveApplicationStage } from "@/app/applications/actions";
 import type { Stage } from "@/lib/db/schema";
@@ -40,6 +41,9 @@ export function KanbanBoard({ cards }: { cards: KanbanCard[] }) {
   );
   const [activeCard, setActiveCard] = useState<KanbanCard | null>(null);
   const [, startTransition] = useTransition();
+  // 드래그를 놓는 순간 브라우저는 click도 발생시킨다 — 카드가 링크라서
+  // 그 click이 상세 페이지 이동으로 새지 않게 드래그 직후 한 번 억제한다
+  const suppressClick = useRef(false);
 
   // Pointer+Touch를 같이 쓰면 터치 기기에서 이중 활성화된다 — Mouse/Touch 분리가 표준 조합.
   // distance 제약은 클릭을, delay 제약은 스크롤을 드래그로 오인하지 않게 한다
@@ -50,12 +54,21 @@ export function KanbanBoard({ cards }: { cards: KanbanCard[] }) {
   );
 
   function handleDragStart(event: DragStartEvent) {
+    suppressClick.current = true;
     const card = optimisticCards.find((c) => c.id === event.active.id);
     setActiveCard(card ?? null);
   }
 
+  function releaseClickSuppression() {
+    // click 이벤트가 처리된 다음 틱에 해제한다
+    setTimeout(() => {
+      suppressClick.current = false;
+    }, 0);
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     setActiveCard(null);
+    releaseClickSuppression();
     const { active, over } = event;
     if (!over) return;
 
@@ -74,7 +87,10 @@ export function KanbanBoard({ cards }: { cards: KanbanCard[] }) {
       sensors={sensors}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      onDragCancel={() => setActiveCard(null)}
+      onDragCancel={() => {
+        setActiveCard(null);
+        releaseClickSuppression();
+      }}
     >
       <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {STAGES.map((stage) => (
@@ -82,6 +98,7 @@ export function KanbanBoard({ cards }: { cards: KanbanCard[] }) {
             key={stage}
             stage={stage}
             cards={optimisticCards.filter((card) => card.stage === stage)}
+            suppressClick={suppressClick}
           />
         ))}
       </section>
@@ -90,7 +107,15 @@ export function KanbanBoard({ cards }: { cards: KanbanCard[] }) {
   );
 }
 
-function StageColumn({ stage, cards }: { stage: Stage; cards: KanbanCard[] }) {
+function StageColumn({
+  stage,
+  cards,
+  suppressClick,
+}: {
+  stage: Stage;
+  cards: KanbanCard[];
+  suppressClick: RefObject<boolean>;
+}) {
   const { isOver, setNodeRef } = useDroppable({ id: stage });
 
   return (
@@ -104,14 +129,20 @@ function StageColumn({ stage, cards }: { stage: Stage; cards: KanbanCard[] }) {
       </h2>
       <ul className="mt-3 flex min-h-8 flex-col gap-2">
         {cards.map((card) => (
-          <DraggableCard key={card.id} card={card} />
+          <DraggableCard key={card.id} card={card} suppressClick={suppressClick} />
         ))}
       </ul>
     </div>
   );
 }
 
-function DraggableCard({ card }: { card: KanbanCard }) {
+function DraggableCard({
+  card,
+  suppressClick,
+}: {
+  card: KanbanCard;
+  suppressClick: RefObject<boolean>;
+}) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: card.id });
 
   return (
@@ -121,7 +152,17 @@ function DraggableCard({ card }: { card: KanbanCard }) {
       {...attributes}
       className={`cursor-grab touch-manipulation ${isDragging ? "opacity-30" : ""}`}
     >
-      <CardContent card={card} />
+      <Link
+        href={`/applications/${card.id}`}
+        className="block"
+        onClick={(event) => {
+          if (suppressClick.current) {
+            event.preventDefault();
+          }
+        }}
+      >
+        <CardContent card={card} />
+      </Link>
     </li>
   );
 }

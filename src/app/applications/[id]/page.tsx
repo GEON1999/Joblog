@@ -1,0 +1,138 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import type { Outcome } from "@/lib/db/schema";
+import { daysInStage } from "@/lib/domain/days-in-stage";
+import { CLOSED_OUTCOMES, OUTCOME_LABELS } from "@/lib/domain/outcome";
+import { STAGE_LABELS } from "@/lib/domain/stage";
+import { formatDate } from "@/lib/format";
+import { getApplicationDetail } from "@/lib/queries/application-detail";
+import { isUuid } from "@/lib/uuid";
+
+import { closeApplication, reopenApplication } from "../actions";
+
+export const metadata: Metadata = {
+  title: "지원 상세 — JobLog",
+};
+
+const OUTCOME_BADGE_STYLES: Record<Outcome, string> = {
+  in_progress: "bg-blue-50 text-blue-700",
+  rejected: "bg-red-50 text-red-700",
+  withdrawn: "bg-gray-100 text-gray-600",
+  accepted: "bg-green-50 text-green-700",
+};
+
+export default async function ApplicationDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  if (!isUuid(id)) {
+    notFound();
+  }
+
+  const detail = await getApplicationDetail(id);
+  if (!detail) {
+    notFound();
+  }
+
+  const { application, companyName, transitions } = detail;
+  const isInProgress = application.outcome === "in_progress";
+  const now = new Date();
+
+  return (
+    <main className="mx-auto w-full max-w-2xl px-4 py-8">
+      <Link href="/" className="text-sm text-gray-500 hover:underline">
+        ← 보드로
+      </Link>
+
+      <header className="mt-4">
+        <p className="text-sm text-gray-500">{companyName}</p>
+        <div className="mt-1 flex items-center gap-3">
+          <h1 className="text-2xl font-bold">{application.title}</h1>
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${OUTCOME_BADGE_STYLES[application.outcome]}`}
+          >
+            {OUTCOME_LABELS[application.outcome]}
+          </span>
+        </div>
+        <p className="mt-2 text-sm text-gray-500">
+          {formatDate(application.appliedAt)} 지원 · 현재 단계{" "}
+          <span className="font-medium text-gray-700">{STAGE_LABELS[application.stage]}</span>
+          {application.closedAt && <> · {formatDate(application.closedAt)} 종료</>}
+        </p>
+      </header>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold text-gray-700">단계 이력</h2>
+        <ol className="mt-3 flex flex-col gap-2">
+          {transitions.map((transition, index) => {
+            const nextEnteredAt = transitions[index + 1]?.occurredAt;
+            const stageLeftAt = nextEnteredAt ?? application.closedAt ?? now;
+            const isCurrent = index === transitions.length - 1 && isInProgress;
+            return (
+              <li
+                key={transition.id}
+                className="flex items-baseline justify-between rounded-md border border-gray-200 px-3 py-2 text-sm"
+              >
+                <span className={isCurrent ? "font-semibold" : ""}>
+                  {STAGE_LABELS[transition.toStage]}
+                  {isCurrent && <span className="ml-2 text-xs text-blue-600">현재</span>}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {formatDate(transition.occurredAt)} 진입 ·{" "}
+                  {daysInStage(transition.occurredAt, stageLeftAt)}일{isCurrent ? "째" : " 머묾"}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+
+      <section className="mt-8">
+        {isInProgress ? (
+          <>
+            <h2 className="text-sm font-semibold text-gray-700">종료 처리</h2>
+            <p className="mt-1 text-xs text-gray-500">
+              종료해도 마지막 단계({STAGE_LABELS[application.stage]})는 기록으로 남습니다.
+            </p>
+            <div className="mt-3 flex gap-2">
+              {CLOSED_OUTCOMES.map((outcome) => (
+                <form
+                  key={outcome}
+                  action={async () => {
+                    "use server";
+                    await closeApplication(application.id, outcome);
+                  }}
+                >
+                  <button
+                    type="submit"
+                    className="rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50"
+                  >
+                    {OUTCOME_LABELS[outcome]}
+                  </button>
+                </form>
+              ))}
+            </div>
+          </>
+        ) : (
+          <form
+            action={async () => {
+              "use server";
+              await reopenApplication(application.id);
+            }}
+          >
+            <button
+              type="submit"
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50"
+            >
+              진행중으로 재개
+            </button>
+          </form>
+        )}
+      </section>
+    </main>
+  );
+}

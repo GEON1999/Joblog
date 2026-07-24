@@ -18,6 +18,9 @@ export default async function Home() {
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-bold">JobLog</h1>
         <div className="flex items-center gap-3 text-sm">
+          <Link href="/archive" className="text-gray-500 hover:underline">
+            아카이브
+          </Link>
           <Link
             href="/applications/new"
             className="rounded-md bg-gray-900 px-3 py-1.5 font-medium text-white hover:bg-gray-700"

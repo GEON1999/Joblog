@@ -6,9 +6,17 @@ import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/require-user";
 import { getDb } from "@/lib/db";
-import { applications, companies, stageTransitions, type Stage } from "@/lib/db/schema";
+import {
+  applications,
+  companies,
+  stageTransitions,
+  type Outcome,
+  type Stage,
+} from "@/lib/db/schema";
+import { validateClose, validateReopen } from "@/lib/domain/outcome";
 import { STAGES } from "@/lib/domain/stage";
 import { validateStageMove } from "@/lib/domain/stage-move";
+import { isUuid } from "@/lib/uuid";
 
 export async function createApplication(formData: FormData) {
   await requireUser();
@@ -52,16 +60,14 @@ export async function createApplication(formData: FormData) {
   redirect("/");
 }
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export async function moveApplicationStage(
   applicationId: string,
   toStage: Stage,
 ): Promise<{ error?: string }> {
   await requireUser();
 
-  // 서버 액션 인자는 신뢰할 수 없는 입력이다 — 위조된 id가 uuid 캐스팅 예외(500)를 내지 않게 막는다
-  if (!UUID_PATTERN.test(applicationId)) {
+  // 서버 액션 인자는 신뢰할 수 없는 입력이다
+  if (!isUuid(applicationId)) {
     return { error: "not-found" };
   }
 
@@ -96,5 +102,80 @@ export async function moveApplicationStage(
   });
 
   revalidatePath("/");
+  return result;
+}
+
+export async function closeApplication(
+  applicationId: string,
+  outcome: Outcome,
+): Promise<{ error?: string }> {
+  await requireUser();
+
+  if (!isUuid(applicationId)) {
+    return { error: "not-found" };
+  }
+
+  const result = await getDb().transaction(async (tx) => {
+    const [application] = await tx
+      .select({ outcome: applications.outcome })
+      .from(applications)
+      .where(eq(applications.id, applicationId));
+
+    if (!application) {
+      return { error: "not-found" };
+    }
+
+    const validation = validateClose(application.outcome, outcome);
+    if (!validation.ok) {
+      return { error: validation.reason };
+    }
+
+    await tx
+      .update(applications)
+      .set({ outcome, closedAt: new Date() })
+      .where(eq(applications.id, applicationId));
+
+    return {};
+  });
+
+  revalidatePath("/");
+  revalidatePath("/archive");
+  revalidatePath(`/applications/${applicationId}`);
+  return result;
+}
+
+export async function reopenApplication(applicationId: string): Promise<{ error?: string }> {
+  await requireUser();
+
+  if (!isUuid(applicationId)) {
+    return { error: "not-found" };
+  }
+
+  const result = await getDb().transaction(async (tx) => {
+    const [application] = await tx
+      .select({ outcome: applications.outcome })
+      .from(applications)
+      .where(eq(applications.id, applicationId));
+
+    if (!application) {
+      return { error: "not-found" };
+    }
+
+    const validation = validateReopen(application.outcome);
+    if (!validation.ok) {
+      return { error: validation.reason };
+    }
+
+    await tx
+      .update(applications)
+      .set({ outcome: "in_progress", closedAt: null })
+      .where(eq(applications.id, applicationId));
+
+    return {};
+  });
+
+  revalidatePath("/");
+  revalidatePath("/archive");
+  revalidatePath(`/applications/${applicationId}`);
   return result;
 }
