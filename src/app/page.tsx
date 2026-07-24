@@ -1,7 +1,9 @@
 import Link from "next/link";
 
 import { KanbanBoard } from "@/components/kanban/board";
+import { needsFollowUp } from "@/lib/domain/follow-up";
 import { getBoardCards } from "@/lib/queries/board";
+import { getApplicationIdsWithPendingActions } from "@/lib/queries/next-actions";
 import { createClient } from "@/lib/supabase/server";
 
 import { logout } from "./login/actions";
@@ -11,7 +13,20 @@ export default async function Home() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const cards = await getBoardCards();
+  const [boardCards, pendingActionIds] = await Promise.all([
+    getBoardCards(),
+    getApplicationIdsWithPendingActions(),
+  ]);
+  const now = new Date();
+  const cards = boardCards.map((card) => ({
+    ...card,
+    followUpNeeded: needsFollowUp({
+      isInProgress: true, // 보드는 진행중 지원만 담는다
+      stageEnteredAt: card.stageEnteredAt,
+      now,
+      hasPendingAction: pendingActionIds.has(card.id),
+    }),
+  }));
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8">

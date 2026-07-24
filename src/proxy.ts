@@ -56,5 +56,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // api/ics는 토큰으로 자체 인증한다 — 캘린더 클라이언트는 세션 쿠키를 못 실으므로 제외한다 (ADR 0007)
+  matcher: [
+    "/((?!api/ics|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };
