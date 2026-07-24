@@ -52,11 +52,18 @@ export async function createApplication(formData: FormData) {
   redirect("/");
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function moveApplicationStage(
   applicationId: string,
   toStage: Stage,
 ): Promise<{ error?: string }> {
   await requireUser();
+
+  // 서버 액션 인자는 신뢰할 수 없는 입력이다 — 위조된 id가 uuid 캐스팅 예외(500)를 내지 않게 막는다
+  if (!UUID_PATTERN.test(applicationId)) {
+    return { error: "not-found" };
+  }
 
   if (!STAGES.includes(toStage)) {
     return { error: "unknown-stage" };

@@ -4,7 +4,7 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   useDraggable,
   useDroppable,
@@ -41,9 +41,10 @@ export function KanbanBoard({ cards }: { cards: KanbanCard[] }) {
   const [activeCard, setActiveCard] = useState<KanbanCard | null>(null);
   const [, startTransition] = useTransition();
 
+  // Pointer+Touch를 같이 쓰면 터치 기기에서 이중 활성화된다 — Mouse/Touch 분리가 표준 조합.
+  // distance 제약은 클릭을, delay 제약은 스크롤을 드래그로 오인하지 않게 한다
   const sensors = useSensors(
-    // distance 제약이 없으면 클릭도 드래그로 오인된다
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
     useSensor(KeyboardSensor),
   );
@@ -118,7 +119,7 @@ function DraggableCard({ card }: { card: KanbanCard }) {
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`cursor-grab touch-none ${isDragging ? "opacity-30" : ""}`}
+      className={`cursor-grab touch-manipulation ${isDragging ? "opacity-30" : ""}`}
     >
       <CardContent card={card} />
     </li>
