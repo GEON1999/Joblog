@@ -1,26 +1,111 @@
 @import "tailwindcss";
 
+/* 클래스 기반 다크 모드 — next-themes가 <html class="dark">를 토글한다 (ADR 0009) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * 디자인 토큰. 컴포넌트는 raw 색이 아니라 이 시맨틱 이름을 참조한다.
+ * 브랜드는 인디고. 라이트가 기본, .dark에서 재정의.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #ffffff; /* 페이지 배경 */
+  --surface: #ffffff; /* 카드 표면 */
+  --surface-muted: #f7f7f9; /* 은은한 채움(입력 그룹, 빈 영역) */
+  --foreground: #0f1115; /* 본문 텍스트 */
+  --muted-foreground: #6b7280; /* 보조 텍스트 */
+  --border: #e6e7eb; /* 경계선 */
+  --input: #ffffff; /* 입력 배경 */
+  --input-foreground: #0f1115; /* 입력 텍스트 — 회색이 아니라 진하게 */
+  --placeholder: #9aa0aa; /* 플레이스홀더 */
+  --ring: #6366f1; /* 포커스 링 */
+
+  --primary: #4f46e5; /* 브랜드 인디고 */
+  --primary-hover: #4338ca;
+  --primary-foreground: #ffffff;
+  --accent: #eef2ff; /* 브랜드 옅은 배경(선택/강조) */
+  --accent-foreground: #4338ca;
+
+  --success: #067647;
+  --success-bg: #ecfdf3;
+  --danger: #d92d20;
+  --danger-bg: #fef3f2;
+  --warning-fg: #b54708;
+  --warning-bg: #fffaeb;
 }
 
+.dark {
+  --background: #0b0c0f;
+  --surface: #15171c;
+  --surface-muted: #1b1e24;
+  --foreground: #f2f3f5;
+  --muted-foreground: #9aa1ac;
+  --border: #262a31;
+  --input: #15171c;
+  --input-foreground: #f2f3f5;
+  --placeholder: #6b7280;
+  --ring: #818cf8;
+
+  --primary: #6366f1;
+  --primary-hover: #7c7ff2;
+  --primary-foreground: #ffffff;
+  --accent: #1e1b3a;
+  --accent-foreground: #c7d2fe;
+
+  --success: #75e0a7;
+  --success-bg: #12261c;
+  --danger: #fda29b;
+  --danger-bg: #2d1512;
+  --warning-fg: #f6c976;
+  --warning-bg: #2b2213;
+}
+
+/* 토큰을 Tailwind 유틸리티로 노출 — bg-surface, text-foreground, border-border 등 */
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
   --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-foreground: var(--input-foreground);
+  --color-placeholder: var(--placeholder);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-warning-fg: var(--warning-fg);
+  --color-warning-bg: var(--warning-bg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* 폼 요소 기본값 — 입력 텍스트는 항상 진하게, 플레이스홀더만 흐리게 */
+input,
+textarea,
+select {
+  color: var(--input-foreground);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--placeholder);
 }
