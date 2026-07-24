@@ -7,9 +7,13 @@ import { daysInStage } from "@/lib/domain/days-in-stage";
 import { CLOSED_OUTCOMES, OUTCOME_LABELS } from "@/lib/domain/outcome";
 import { STAGE_LABELS } from "@/lib/domain/stage";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { NEXT_ACTION_KIND_LABELS, NEXT_ACTION_KINDS } from "@/lib/domain/next-action";
 import { getApplicationDetail } from "@/lib/queries/application-detail";
 import { getInterviewsForApplication } from "@/lib/queries/interviews";
+import { getNextActionsForApplication } from "@/lib/queries/next-actions";
 import { isUuid } from "@/lib/uuid";
+
+import { createNextAction, toggleNextActionDone } from "@/app/next-actions/actions";
 
 import { closeApplication, reopenApplication } from "../actions";
 
@@ -24,19 +28,28 @@ const OUTCOME_BADGE_STYLES: Record<Outcome, string> = {
   accepted: "bg-green-50 text-green-700",
 };
 
+const ACTION_ERROR_MESSAGES: Record<string, string> = {
+  "missing-action-title": "액션 제목을 입력해 주세요.",
+  "invalid-action-kind": "액션 종류가 올바르지 않습니다.",
+  "invalid-action-due": "기한 형식이 올바르지 않습니다.",
+};
+
 export default async function ApplicationDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
-  const { id } = await params;
+  const [{ id }, { error }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) {
     notFound();
   }
 
-  const [detail, interviews] = await Promise.all([
+  const [detail, interviews, actions] = await Promise.all([
     getApplicationDetail(id),
     getInterviewsForApplication(id),
+    getNextActionsForApplication(id),
   ]);
   if (!detail) {
     notFound();
@@ -45,6 +58,7 @@ export default async function ApplicationDetailPage({
   const { application, companyName, transitions, snapshot } = detail;
   const isInProgress = application.outcome === "in_progress";
   const now = new Date();
+  const actionError = error ? ACTION_ERROR_MESSAGES[error] : undefined;
 
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-8">
@@ -93,6 +107,84 @@ export default async function ApplicationDetailPage({
             );
           })}
         </ol>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold text-gray-700">다음 액션</h2>
+        {actions.length > 0 && (
+          <ul className="mt-3 flex flex-col gap-2">
+            {actions.map((action) => {
+              const isDone = action.doneAt !== null;
+              const isOverdue = !isDone && action.dueAt < now;
+              return (
+                <li
+                  key={action.id}
+                  className="flex items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-sm"
+                >
+                  <span className={isDone ? "text-gray-400 line-through" : ""}>
+                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+                      {NEXT_ACTION_KIND_LABELS[action.kind]}
+                    </span>{" "}
+                    {action.title}
+                    <span
+                      className={`ml-2 text-xs ${isOverdue ? "font-medium text-red-600" : "text-gray-500"}`}
+                    >
+                      {formatDateTime(action.dueAt)}
+                      {isOverdue && " · 지남"}
+                    </span>
+                  </span>
+                  <form action={toggleNextActionDone.bind(null, action.id, application.id)}>
+                    <button
+                      type="submit"
+                      className="rounded-md border border-gray-300 px-2 py-1 text-xs hover:bg-gray-50"
+                    >
+                      {isDone ? "되돌리기" : "완료"}
+                    </button>
+                  </form>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <form
+          action={createNextAction.bind(null, application.id)}
+          className="mt-3 flex flex-col gap-2 rounded-md border border-gray-200 bg-gray-50 p-3"
+        >
+          <div className="flex gap-2">
+            <select
+              name="kind"
+              defaultValue="follow_up"
+              className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm focus:border-gray-500 focus:outline-none"
+            >
+              {NEXT_ACTION_KINDS.map((kind) => (
+                <option key={kind} value={kind}>
+                  {NEXT_ACTION_KIND_LABELS[kind]}
+                </option>
+              ))}
+            </select>
+            <input
+              type="datetime-local"
+              name="dueAt"
+              required
+              className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm focus:border-gray-500 focus:outline-none"
+            />
+          </div>
+          <input
+            type="text"
+            name="title"
+            required
+            placeholder="예: 1차 면접, 과제 제출, 팔로업 메일"
+            className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-gray-500 focus:outline-none"
+          />
+          {actionError && <p className="text-sm text-red-600">{actionError}</p>}
+          <button
+            type="submit"
+            className="self-start rounded-md bg-gray-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-700"
+          >
+            액션 추가
+          </button>
+        </form>
       </section>
 
       <section className="mt-8">

@@ -14,6 +14,16 @@ Next.js (App Router, TypeScript) · Tailwind CSS · Vercel · Supabase (Postgres
 
 기술 선택의 근거는 ADR로 기록합니다.
 
+## 캘린더 구독 (ICS)
+
+다음 액션을 캘린더에서 보려면 `.env`의 `ICS_FEED_TOKEN`을 임의의 긴 문자열로 설정한 뒤, 구글/애플 캘린더에 아래 URL을 구독으로 추가합니다.
+
+```
+https://<배포 도메인>/api/ics?token=<ICS_FEED_TOKEN>
+```
+
+캘린더 클라이언트는 로그인 세션을 실을 수 없어 이 피드만 토큰으로 인증합니다 ([ADR 0007](docs/adr/0007-ics-feed-token-auth.md)). 토큰이 유출되면 값을 교체해 구독 URL을 무효화합니다.
+
 ## Development
 
 ### 사전 준비 (Supabase)

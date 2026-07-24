@@ -89,6 +89,33 @@ export const postingSnapshots = pgTable("posting_snapshots", {
     .$onUpdate(() => new Date()),
 }).enableRLS();
 
+export const nextActionKindEnum = pgEnum("next_action_kind", [
+  "interview", // 면접 일정
+  "assignment_due", // 과제 마감
+  "follow_up", // 팔로업
+  "other", // 기타
+]);
+
+export const nextActions = pgTable(
+  "next_actions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    applicationId: uuid("application_id")
+      .notNull()
+      .references(() => applications.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    kind: nextActionKindEnum("kind").notNull().default("other"),
+    dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
+    doneAt: timestamp("done_at", { withTimezone: true }), // null이면 미완료
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("next_actions_application_id_idx").on(table.applicationId)],
+).enableRLS();
+
 export const interviews = pgTable(
   "interviews",
   {
@@ -135,5 +162,7 @@ export type Company = typeof companies.$inferSelect;
 export type PostingSnapshot = typeof postingSnapshots.$inferSelect;
 export type Interview = typeof interviews.$inferSelect;
 export type InterviewQuestion = typeof interviewQuestions.$inferSelect;
+export type NextAction = typeof nextActions.$inferSelect;
+export type NextActionKind = (typeof nextActionKindEnum.enumValues)[number];
 export type Application = typeof applications.$inferSelect;
 export type StageTransition = typeof stageTransitions.$inferSelect;
