@@ -33,6 +33,9 @@ export default async function Home() {
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-bold">JobLog</h1>
         <div className="flex items-center gap-3 text-sm">
+          <Link href="/documents" className="text-gray-500 hover:underline">
+            문서
+          </Link>
           <Link href="/questions" className="text-gray-500 hover:underline">
             질문 은행
           </Link>
