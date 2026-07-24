@@ -36,6 +36,9 @@ export default async function Home() {
           <Link href="/questions" className="text-gray-500 hover:underline">
             질문 은행
           </Link>
+          <Link href="/offers" className="text-gray-500 hover:underline">
+            오퍼
+          </Link>
           <Link href="/dashboard" className="text-gray-500 hover:underline">
             대시보드
           </Link>
